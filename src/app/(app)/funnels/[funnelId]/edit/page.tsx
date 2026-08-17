@@ -1,31 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Globe, Hourglass } from "lucide-react";
+import { ArrowLeft, Globe } from "lucide-react";
 
+import { BuilderTabs } from "@/components/builder/builder-tabs";
+import { PreviewPane } from "@/components/builder/preview-pane";
 import { FunnelRowActions } from "@/components/funnels/funnel-row-actions";
-import { FunnelSettingsForm } from "@/components/funnels/funnel-settings-form";
 import { FunnelStatusBadge } from "@/components/funnels/status-badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { prisma } from "@/lib/db";
 import { requireWorkspace } from "@/server/context";
+import { compileFunnelSnapshot } from "@/server/services/snapshot";
 
 export const metadata = { title: "Editar funnel" };
-
-const BUILDER_TABS = [
-  "Diseño",
-  "Preguntas",
-  "Lógica",
-  "Resultados",
-  "Lead Capture",
-  "CTA",
-];
 
 export default async function FunnelEditPage({
   params,
@@ -33,18 +19,21 @@ export default async function FunnelEditPage({
   const ctx = await requireWorkspace();
   const { funnelId } = await params;
 
-  const funnel = await prisma.funnel.findFirst({
-    where: { id: funnelId, workspaceId: ctx.workspaceId },
-    include: {
-      _count: { select: { leads: true, sessions: true, questions: true } },
-    },
-  });
-  if (!funnel) {
+  const [funnel, snapshot] = await Promise.all([
+    prisma.funnel.findFirst({
+      where: { id: funnelId, workspaceId: ctx.workspaceId },
+      include: {
+        _count: { select: { leads: true, sessions: true } },
+      },
+    }),
+    compileFunnelSnapshot(ctx, funnelId),
+  ]);
+  if (!funnel || !snapshot) {
     notFound();
   }
 
   return (
-    <div className="mx-auto grid max-w-4xl gap-6">
+    <div className="mx-auto grid max-w-[1400px] gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="icon">
@@ -67,7 +56,10 @@ export default async function FunnelEditPage({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button disabled title="Disponible cuando el builder y el runner estén listos (Fases 3-4)">
+          <Button
+            disabled
+            title="Disponible cuando el runner público esté listo (Fase 4)"
+          >
             Publicar
           </Button>
           <FunnelRowActions
@@ -82,50 +74,22 @@ export default async function FunnelEditPage({
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Ajustes generales</CardTitle>
-          <CardDescription>
-            Nombre, URL pública y contexto del funnel. Este contexto también
-            alimentará a la IA.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FunnelSettingsForm
-            funnel={{
-              id: funnel.id,
-              name: funnel.name,
-              slug: funnel.slug,
-              goal: funnel.goal,
-              industry: funnel.industry,
-              audience: funnel.audience,
-            }}
-          />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Builder</CardTitle>
-          <CardDescription>
-            El editor visual de preguntas, lógica, resultados, captura de leads
-            y CTA llega en la Fase 3.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2">
-            {BUILDER_TABS.map((tab) => (
-              <span
-                key={tab}
-                className="inline-flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-sm text-muted-foreground"
-              >
-                <Hourglass className="size-3.5" />
-                {tab}
-              </span>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,440px)]">
+        <BuilderTabs
+          snapshot={snapshot}
+          settings={{
+            id: funnel.id,
+            name: funnel.name,
+            slug: funnel.slug,
+            goal: funnel.goal,
+            industry: funnel.industry,
+            audience: funnel.audience,
+          }}
+        />
+        <div className="sticky top-20 hidden h-[calc(100vh-7rem)] xl:block">
+          <PreviewPane snapshot={snapshot} />
+        </div>
+      </div>
     </div>
   );
 }

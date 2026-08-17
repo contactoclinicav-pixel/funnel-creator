@@ -60,4 +60,5 @@ prisma/            # schema + migraciones
 
 - ✅ **Fase 1 — Foundation**: proyecto, base de datos, autenticación completa, workspace multi-tenant, layout y navegación, dashboard.
 - ✅ **Fase 2 — Funnel CRUD**: crear, editar ajustes, duplicar (copia profunda), archivar/restaurar, eliminar con confirmación, listado con filtros por estado, slugs únicos.
-- ⏭️ Fase 3 — Builder (preguntas, opciones, resultados, lead capture, CTA, preview).
+- ✅ **Fase 3 — Builder**: editor por tabs (Diseño, Preguntas, Lógica, Resultados, Leads, CTA), 8 tipos de pregunta, reglas de puntos y saltos, result engine puro compartido, preview interactivo desktop/mobile.
+- ⏭️ Fase 4 — Public Funnel Runner (URL pública, sesiones, respuestas, result engine server-side).
