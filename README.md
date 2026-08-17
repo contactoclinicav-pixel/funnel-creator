@@ -64,4 +64,5 @@ prisma/            # schema + migraciones
 - ✅ **Fase 4 — Public Funnel Runner**: publicación por snapshot (`FunnelVersion`), URL pública `/f/{slug}` sin login, sesiones con UTM/referrer, respuestas persistidas, resultado calculado server-side, leads validados contra la config, 7 eventos de analytics y rate limiting en endpoints públicos.
 - ✅ **Fase 5 — Leads**: tabla con filtros por estado y funnel, detalle con respuestas legibles de la versión que vio el visitante, fuente/UTM, cambio de estado (Nuevo→Contactado→Calificado→Convertido→Perdido), notas internas y eliminación del lead con todos sus datos.
 - ✅ **Fase 6 — Analytics**: resumen por funnel, embudo Visitas→Inicios→Completados→Leads→CTA, 4 tasas (conversión, finalización, captura, clic CTA) y abandono por pregunta.
-- ⏭️ Fase 7 — AI Generator (onboarding conversacional, generación estructurada validada, creación automática del funnel). Requiere `ANTHROPIC_API_KEY` en `.env`.
+- ✅ **Fase 7 — AI Generator**: onboarding conversacional de 6 pasos, abstracción `AIProvider` (server-side), salida estructurada validada con Zod + reintento con feedback, y creación transaccional del funnel completo. Requiere `ANTHROPIC_API_KEY` en `.env`.
+- ⏭️ Fase 8 — Templates + Branding.
