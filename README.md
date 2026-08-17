@@ -63,4 +63,5 @@ prisma/            # schema + migraciones
 - ✅ **Fase 3 — Builder**: editor por tabs (Diseño, Preguntas, Lógica, Resultados, Leads, CTA), 8 tipos de pregunta, reglas de puntos y saltos, result engine puro compartido, preview interactivo desktop/mobile.
 - ✅ **Fase 4 — Public Funnel Runner**: publicación por snapshot (`FunnelVersion`), URL pública `/f/{slug}` sin login, sesiones con UTM/referrer, respuestas persistidas, resultado calculado server-side, leads validados contra la config, 7 eventos de analytics y rate limiting en endpoints públicos.
 - ✅ **Fase 5 — Leads**: tabla con filtros por estado y funnel, detalle con respuestas legibles de la versión que vio el visitante, fuente/UTM, cambio de estado (Nuevo→Contactado→Calificado→Convertido→Perdido), notas internas y eliminación del lead con todos sus datos.
-- ⏭️ Fase 6 — Analytics (métricas por funnel, conversion funnel, abandono por pregunta).
+- ✅ **Fase 6 — Analytics**: resumen por funnel, embudo Visitas→Inicios→Completados→Leads→CTA, 4 tasas (conversión, finalización, captura, clic CTA) y abandono por pregunta.
+- ⏭️ Fase 7 — AI Generator (onboarding conversacional, generación estructurada validada, creación automática del funnel). Requiere `ANTHROPIC_API_KEY` en `.env`.
