@@ -11,7 +11,6 @@ import {
 } from "@/lib/funnel-config";
 import {
   computeResult,
-  isAnswered,
   nextQuestionIndex,
   orderedQuestions,
   type AnswerMap,

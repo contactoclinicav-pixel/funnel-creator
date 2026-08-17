@@ -62,4 +62,5 @@ prisma/            # schema + migraciones
 - ✅ **Fase 2 — Funnel CRUD**: crear, editar ajustes, duplicar (copia profunda), archivar/restaurar, eliminar con confirmación, listado con filtros por estado, slugs únicos.
 - ✅ **Fase 3 — Builder**: editor por tabs (Diseño, Preguntas, Lógica, Resultados, Leads, CTA), 8 tipos de pregunta, reglas de puntos y saltos, result engine puro compartido, preview interactivo desktop/mobile.
 - ✅ **Fase 4 — Public Funnel Runner**: publicación por snapshot (`FunnelVersion`), URL pública `/f/{slug}` sin login, sesiones con UTM/referrer, respuestas persistidas, resultado calculado server-side, leads validados contra la config, 7 eventos de analytics y rate limiting en endpoints públicos.
-- ⏭️ Fase 5 — Leads (dashboard, detalle, estados, notas).
+- ✅ **Fase 5 — Leads**: tabla con filtros por estado y funnel, detalle con respuestas legibles de la versión que vio el visitante, fuente/UTM, cambio de estado (Nuevo→Contactado→Calificado→Convertido→Perdido), notas internas y eliminación del lead con todos sus datos.
+- ⏭️ Fase 6 — Analytics (métricas por funnel, conversion funnel, abandono por pregunta).

@@ -39,14 +39,19 @@ export function PublishControls({
     const form = new FormData();
     form.set("funnelId", funnel.id);
     setBusy(true);
-    const result = await action(form);
-    setBusy(false);
-    if (result?.error) {
-      toast.error(result.error);
-      return;
+    try {
+      const result = await action(form);
+      if (result?.error) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success(successMessage);
+      router.refresh();
+    } catch {
+      toast.error("No se pudo completar la acción. Inténtalo de nuevo.");
+    } finally {
+      setBusy(false);
     }
-    toast.success(successMessage);
-    router.refresh();
   }
 
   async function copyLink() {

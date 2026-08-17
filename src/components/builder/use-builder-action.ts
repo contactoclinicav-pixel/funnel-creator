@@ -16,17 +16,23 @@ export function useBuilderAction() {
     successMessage?: string
   ): Promise<boolean> {
     setPending(true);
-    const result = await promise;
-    setPending(false);
-    if (result?.error) {
-      toast.error(result.error);
+    try {
+      const result = await promise;
+      if (result?.error) {
+        toast.error(result.error);
+        return false;
+      }
+      if (successMessage) {
+        toast.success(successMessage);
+      }
+      router.refresh();
+      return true;
+    } catch {
+      toast.error("No se pudo completar la acción. Inténtalo de nuevo.");
       return false;
+    } finally {
+      setPending(false);
     }
-    if (successMessage) {
-      toast.success(successMessage);
-    }
-    router.refresh();
-    return true;
   }
 
   return { run, pending };

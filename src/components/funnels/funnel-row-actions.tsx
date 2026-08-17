@@ -64,15 +64,21 @@ export function FunnelRowActions({
     successMessage: string
   ) {
     setBusy(true);
-    const result = await action(withFunnelId());
-    setBusy(false);
-    if (result?.error) {
-      toast.error(result.error);
+    try {
+      const result = await action(withFunnelId());
+      if (result?.error) {
+        toast.error(result.error);
+        return false;
+      }
+      toast.success(successMessage);
+      router.refresh();
+      return true;
+    } catch {
+      toast.error("No se pudo completar la acción. Inténtalo de nuevo.");
       return false;
+    } finally {
+      setBusy(false);
     }
-    toast.success(successMessage);
-    router.refresh();
-    return true;
   }
 
   const hasData = funnel.leadCount > 0 || funnel.sessionCount > 0;
