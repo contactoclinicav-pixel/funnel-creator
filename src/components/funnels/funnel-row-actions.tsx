@@ -7,6 +7,7 @@ import {
   Archive,
   ArchiveRestore,
   Copy,
+  ExternalLink,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -45,6 +46,7 @@ export function FunnelRowActions({
     status: string;
     leadCount: number;
     sessionCount: number;
+    slug?: string;
   };
 }) {
   const router = useRouter();
@@ -91,6 +93,18 @@ export function FunnelRowActions({
               Editar
             </Link>
           </DropdownMenuItem>
+          {funnel.status === "PUBLISHED" && funnel.slug ? (
+            <DropdownMenuItem asChild>
+              <a
+                href={`/f/${funnel.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ExternalLink className="size-4" />
+                Ver funnel público
+              </a>
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem
             onClick={() => run(duplicateFunnelAction, "Funnel duplicado.")}
           >

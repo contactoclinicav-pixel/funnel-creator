@@ -154,6 +154,7 @@ export default async function FunnelsPage({
                           status: funnel.status,
                           leadCount: funnel._count.leads,
                           sessionCount: funnel._count.sessions,
+                          slug: funnel.slug,
                         }}
                       />
                     </TableCell>

@@ -5,6 +5,7 @@ import { ArrowLeft, Globe } from "lucide-react";
 import { BuilderTabs } from "@/components/builder/builder-tabs";
 import { PreviewPane } from "@/components/builder/preview-pane";
 import { FunnelRowActions } from "@/components/funnels/funnel-row-actions";
+import { PublishControls } from "@/components/funnels/publish-controls";
 import { FunnelStatusBadge } from "@/components/funnels/status-badge";
 import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/db";
@@ -56,12 +57,14 @@ export default async function FunnelEditPage({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            disabled
-            title="Disponible cuando el runner público esté listo (Fase 4)"
-          >
-            Publicar
-          </Button>
+          <PublishControls
+            funnel={{
+              id: funnel.id,
+              slug: funnel.slug,
+              status: funnel.status,
+              questionCount: snapshot.questions.length,
+            }}
+          />
           <FunnelRowActions
             funnel={{
               id: funnel.id,

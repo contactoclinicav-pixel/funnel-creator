@@ -16,6 +16,7 @@ import {
   setFunnelStatus,
   updateFunnelSettings,
 } from "@/server/services/funnel";
+import { publishFunnel, unpublishFunnel } from "@/server/services/publish";
 
 export async function createFunnelAction(formData: FormData) {
   const ctx = await requireWorkspace();
@@ -86,6 +87,38 @@ async function changeStatus(formData: FormData, status: "DRAFT" | "ARCHIVED") {
   }
 
   const result = await setFunnelStatus(ctx, parsed.data.funnelId, status);
+  if ("error" in result) {
+    return { error: result.error };
+  }
+  revalidatePath("/funnels");
+  revalidatePath(`/funnels/${parsed.data.funnelId}/edit`);
+  return { success: true };
+}
+
+export async function publishFunnelAction(formData: FormData) {
+  const ctx = await requireWorkspace();
+  const parsed = funnelIdSchema.safeParse({ funnelId: formData.get("funnelId") });
+  if (!parsed.success) {
+    return { error: "Solicitud inválida." };
+  }
+
+  const result = await publishFunnel(ctx, parsed.data.funnelId);
+  if ("error" in result) {
+    return { error: result.error };
+  }
+  revalidatePath("/funnels");
+  revalidatePath(`/funnels/${parsed.data.funnelId}/edit`);
+  return { success: true, versionNumber: result.version.versionNumber };
+}
+
+export async function unpublishFunnelAction(formData: FormData) {
+  const ctx = await requireWorkspace();
+  const parsed = funnelIdSchema.safeParse({ funnelId: formData.get("funnelId") });
+  if (!parsed.success) {
+    return { error: "Solicitud inválida." };
+  }
+
+  const result = await unpublishFunnel(ctx, parsed.data.funnelId);
   if ("error" in result) {
     return { error: result.error };
   }
