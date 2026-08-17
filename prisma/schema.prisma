@@ -1,0 +1,392 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────
+// Identidad (modelos requeridos por Better Auth)
+// ─────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions    Session[]
+  accounts    Account[]
+  memberships WorkspaceMember[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+// ─────────────────────────────────────────────────────────
+// Tenancy
+// ─────────────────────────────────────────────────────────
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  createdBy String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members WorkspaceMember[]
+  funnels Funnel[]
+  leads   Lead[]
+  brand   BrandSettings?
+  events  AnalyticsEvent[]
+}
+
+model WorkspaceMember {
+  id          String     @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        MemberRole @default(OWNER)
+  createdAt   DateTime   @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([userId])
+}
+
+model BrandSettings {
+  id             String   @id @default(cuid())
+  workspaceId    String   @unique
+  businessName   String?
+  logoUrl        String?
+  primaryColor   String?
+  secondaryColor String?
+  font           String?
+  website        String?
+  whatsapp       String?
+  email          String?
+  updatedAt      DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────────────────
+// Funnel (draft editable)
+// ─────────────────────────────────────────────────────────
+
+enum FunnelStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Funnel {
+  id          String       @id @default(cuid())
+  workspaceId String
+  name        String
+  slug        String       @unique
+  status      FunnelStatus @default(DRAFT)
+  goal        String?
+  industry    String?
+  audience    String?
+  intro       Json? // { headline, subheadline, buttonText }
+  theme       Json? // colores, tipografía, fondo, botones, logo
+  leadCapture Json? // { fields[], position: before|after, consent{} }
+  cta         Json? // { type, label, value, whatsappMessage }
+  createdBy   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  workspace  Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  questions  Question[]
+  logicRules LogicRule[]
+  profiles   ResultProfile[]
+  versions   FunnelVersion[]
+  sessions   ResponseSession[]
+  leads      Lead[]
+  events     AnalyticsEvent[]
+
+  @@index([workspaceId, status])
+}
+
+model FunnelVersion {
+  id            String   @id @default(cuid())
+  funnelId      String
+  versionNumber Int
+  snapshot      Json // funnel compilado completo e inmutable
+  publishedAt   DateTime @default(now())
+  createdBy     String
+
+  funnel   Funnel            @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  sessions ResponseSession[]
+
+  @@unique([funnelId, versionNumber])
+}
+
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTI_CHOICE
+  YES_NO
+  SCALE
+  TEXT
+  NUMBER
+  EMAIL
+  PHONE
+}
+
+model Question {
+  id          String       @id @default(cuid())
+  funnelId    String
+  type        QuestionType
+  title       String
+  description String?
+  required    Boolean      @default(true)
+  order       Int
+  settings    Json? // p.ej. escala min/max/labels
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  funnel     Funnel           @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  options    QuestionOption[]
+  logicRules LogicRule[]
+
+  @@index([funnelId, order])
+}
+
+model QuestionOption {
+  id         String  @id @default(cuid())
+  questionId String
+  label      String
+  value      String
+  order      Int
+  imageUrl   String? // preparado para respuestas con imagen (futuro)
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId, order])
+}
+
+enum LogicAction {
+  ADD_SCORE
+  GOTO_QUESTION
+}
+
+model LogicRule {
+  id               String      @id @default(cuid())
+  funnelId         String
+  questionId       String
+  optionId         String? // condición: respuesta = esta opción
+  action           LogicAction
+  targetProfileId  String? // para ADD_SCORE
+  points           Int? // para ADD_SCORE
+  targetQuestionId String? // para GOTO_QUESTION
+
+  funnel   Funnel   @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([funnelId, questionId])
+}
+
+model ResultProfile {
+  id             String   @id @default(cuid())
+  funnelId       String
+  key            String // slug interno estable para scoring
+  title          String
+  description    String?
+  recommendation String?
+  imageUrl       String?
+  ctaOverride    Json? // CTA específico del perfil (opcional)
+  order          Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  funnel Funnel @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+
+  @@unique([funnelId, key])
+}
+
+// ─────────────────────────────────────────────────────────
+// Runtime del visitante
+// ─────────────────────────────────────────────────────────
+
+model ResponseSession {
+  id              String    @id @default(cuid())
+  funnelId        String
+  funnelVersionId String
+  visitorId       String // anónimo, cookie/localStorage
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+  scores          Json? // { profileKey: puntos }
+  resultProfileId String?
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  referrer        String?
+
+  funnel  Funnel        @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  version FunnelVersion @relation(fields: [funnelVersionId], references: [id], onDelete: Cascade)
+  answers Answer[]
+  lead    Lead?
+
+  @@index([funnelId, startedAt])
+}
+
+model Answer {
+  id         String   @id @default(cuid())
+  sessionId  String
+  questionId String // id de la pregunta dentro del snapshot de la versión
+  value      Json // texto | número | optionId[] según tipo
+  createdAt  DateTime @default(now())
+
+  session ResponseSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+// ─────────────────────────────────────────────────────────
+// Leads
+// ─────────────────────────────────────────────────────────
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+model Lead {
+  id              String     @id @default(cuid())
+  workspaceId     String
+  funnelId        String
+  sessionId       String?    @unique
+  name            String?
+  email           String?
+  phone           String?
+  city            String?
+  consent         Boolean    @default(false)
+  status          LeadStatus @default(NEW)
+  resultProfileId String?
+  ctaClicked      String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  funnel    Funnel           @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  session   ResponseSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  notes     LeadNote[]
+
+  @@index([workspaceId, status])
+  @@index([funnelId])
+}
+
+model LeadNote {
+  id        String   @id @default(cuid())
+  leadId    String
+  authorId  String // userId del autor (sin FK para conservar notas si el usuario se borra)
+  body      String
+  createdAt DateTime @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+}
+
+// ─────────────────────────────────────────────────────────
+// Analytics
+// ─────────────────────────────────────────────────────────
+
+enum EventType {
+  FUNNEL_VIEW
+  FUNNEL_START
+  QUESTION_ANSWERED
+  FUNNEL_COMPLETED
+  LEAD_CREATED
+  RESULT_VIEWED
+  CTA_CLICKED
+}
+
+model AnalyticsEvent {
+  id          String    @id @default(cuid())
+  workspaceId String
+  funnelId    String
+  sessionId   String?
+  type        EventType
+  questionId  String?
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  funnel    Funnel    @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+
+  @@index([funnelId, type, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────
+// Templates (globales, no pertenecen a un workspace)
+// ─────────────────────────────────────────────────────────
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  category    String
+  config      Json // misma forma que el snapshot de FunnelVersion
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
