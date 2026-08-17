@@ -2,33 +2,48 @@ import Link from "next/link";
 import { Sparkles } from "lucide-react";
 
 import { PageHeader } from "@/components/layout/page-header";
-import { Badge } from "@/components/ui/badge";
+import { CreateFunnelDialog } from "@/components/funnels/create-funnel-dialog";
+import { FunnelRowActions } from "@/components/funnels/funnel-row-actions";
+import { FunnelStatusBadge } from "@/components/funnels/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { prisma } from "@/lib/db";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { requireWorkspace } from "@/server/context";
+import { listFunnels } from "@/server/services/funnel";
+import type { FunnelStatus } from "@/generated/prisma/enums";
 
 export const metadata = { title: "Mis Funnels" };
 
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: "Borrador",
-  PUBLISHED: "Publicado",
-  ARCHIVED: "Archivado",
-};
+const FILTERS: { key: string; label: string; status?: FunnelStatus }[] = [
+  { key: "todos", label: "Todos" },
+  { key: "borradores", label: "Borradores", status: "DRAFT" },
+  { key: "publicados", label: "Publicados", status: "PUBLISHED" },
+  { key: "archivados", label: "Archivados", status: "ARCHIVED" },
+];
 
-export default async function FunnelsPage() {
+export default async function FunnelsPage({
+  searchParams,
+}: PageProps<"/funnels">) {
   const ctx = await requireWorkspace();
-  const funnels = await prisma.funnel.findMany({
-    where: { workspaceId: ctx.workspaceId },
-    orderBy: { updatedAt: "desc" },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      status: true,
-      updatedAt: true,
-      _count: { select: { leads: true, sessions: true } },
-    },
+  const params = await searchParams;
+  const filterKey = typeof params.estado === "string" ? params.estado : "todos";
+  const filter = FILTERS.find((f) => f.key === filterKey) ?? FILTERS[0];
+  const openNew = params.nuevo === "1";
+
+  const funnels = await listFunnels(ctx, { status: filter.status });
+
+  const dateFormatter = new Intl.DateTimeFormat("es", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
   });
 
   return (
@@ -37,14 +52,34 @@ export default async function FunnelsPage() {
         title="Mis Funnels"
         description="Crea, edita y publica tus funnels de conversión."
         actions={
-          <Button asChild>
-            <Link href="/create-ai">
-              <Sparkles className="size-4" />
-              Crear con IA
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+              <Link href="/create-ai">
+                <Sparkles className="size-4" />
+                Crear con IA
+              </Link>
+            </Button>
+            <CreateFunnelDialog key={String(openNew)} defaultOpen={openNew} />
+          </div>
         }
       />
+
+      <div className="flex flex-wrap gap-1">
+        {FILTERS.map((f) => (
+          <Link
+            key={f.key}
+            href={f.key === "todos" ? "/funnels" : `/funnels?estado=${f.key}`}
+            className={cn(
+              "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
+              f.key === filter.key
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            {f.label}
+          </Link>
+        ))}
+      </div>
 
       {funnels.length === 0 ? (
         <Card>
@@ -54,44 +89,78 @@ export default async function FunnelsPage() {
                 <Sparkles className="size-6 text-primary" />
               </span>
               <div>
-                <p className="font-medium">Todavía no tienes funnels</p>
+                <p className="font-medium">
+                  {filter.status
+                    ? `No tienes funnels en «${filter.label}»`
+                    : "Todavía no tienes funnels"}
+                </p>
                 <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-                  La gestión completa de funnels (crear, duplicar, archivar)
-                  llega en la Fase 2. Empieza creando uno con IA.
+                  Crea uno en blanco o espera a la creación con IA (Fase 7)
+                  para generarlo describiendo tu negocio.
                 </p>
               </div>
-              <Button asChild>
-                <Link href="/create-ai">Crear mi primer funnel</Link>
-              </Button>
             </div>
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardContent>
-            <ul className="divide-y">
-              {funnels.map((funnel) => (
-                <li
-                  key={funnel.id}
-                  className="flex items-center justify-between gap-3 py-3"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{funnel.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      /f/{funnel.slug} · {funnel._count.sessions} sesiones ·{" "}
-                      {funnel._count.leads} leads
-                    </p>
-                  </div>
-                  <Badge
-                    variant={
-                      funnel.status === "PUBLISHED" ? "default" : "secondary"
-                    }
-                  >
-                    {STATUS_LABEL[funnel.status] ?? funnel.status}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
+        <Card className="py-0">
+          <CardContent className="overflow-x-auto px-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="pl-6">Funnel</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Preguntas</TableHead>
+                  <TableHead className="text-right">Sesiones</TableHead>
+                  <TableHead className="text-right">Leads</TableHead>
+                  <TableHead>Actualizado</TableHead>
+                  <TableHead className="w-12 pr-4" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {funnels.map((funnel) => (
+                  <TableRow key={funnel.id}>
+                    <TableCell className="pl-6">
+                      <Link
+                        href={`/funnels/${funnel.id}/edit`}
+                        className="font-medium hover:underline"
+                      >
+                        {funnel.name}
+                      </Link>
+                      <p className="text-xs text-muted-foreground">
+                        /f/{funnel.slug}
+                      </p>
+                    </TableCell>
+                    <TableCell>
+                      <FunnelStatusBadge status={funnel.status} />
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {funnel._count.questions}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {funnel._count.sessions}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {funnel._count.leads}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {dateFormatter.format(funnel.updatedAt)}
+                    </TableCell>
+                    <TableCell className="pr-4">
+                      <FunnelRowActions
+                        funnel={{
+                          id: funnel.id,
+                          name: funnel.name,
+                          status: funnel.status,
+                          leadCount: funnel._count.leads,
+                          sessionCount: funnel._count.sessions,
+                        }}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       )}

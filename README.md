@@ -59,4 +59,5 @@ prisma/            # schema + migraciones
 ## Estado del desarrollo
 
 - ✅ **Fase 1 — Foundation**: proyecto, base de datos, autenticación completa, workspace multi-tenant, layout y navegación, dashboard.
-- ⏭️ Fase 2 — Funnel CRUD.
+- ✅ **Fase 2 — Funnel CRUD**: crear, editar ajustes, duplicar (copia profunda), archivar/restaurar, eliminar con confirmación, listado con filtros por estado, slugs únicos.
+- ⏭️ Fase 3 — Builder (preguntas, opciones, resultados, lead capture, CTA, preview).
