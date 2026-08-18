@@ -1,18 +1,35 @@
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
-const STATUS_CONFIG: Record<
-  string,
-  { label: string; variant: "default" | "secondary" | "outline" }
-> = {
-  DRAFT: { label: "Borrador", variant: "secondary" },
-  PUBLISHED: { label: "Publicado", variant: "default" },
-  ARCHIVED: { label: "Archivado", variant: "outline" },
+const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
+  PUBLISHED: { label: "Publicado", className: "bg-brand-tint text-brand" },
+  DRAFT: { label: "Borrador", className: "bg-draft text-draft-foreground" },
+  ARCHIVED: {
+    label: "Archivado",
+    className: "bg-archived text-archived-foreground",
+  },
 };
 
-export function FunnelStatusBadge({ status }: { status: string }) {
+/** Badge pill de estado del funnel, con los colores del handoff. */
+export function FunnelStatusBadge({
+  status,
+  className,
+}: {
+  status: string;
+  className?: string;
+}) {
   const config = STATUS_CONFIG[status] ?? {
     label: status,
-    variant: "outline" as const,
+    className: "bg-muted text-ink-secondary",
   };
-  return <Badge variant={config.variant}>{config.label}</Badge>;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2.5 py-[3px] text-[12px] font-medium",
+        config.className,
+        className
+      )}
+    >
+      {config.label}
+    </span>
+  );
 }

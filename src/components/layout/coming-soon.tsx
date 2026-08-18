@@ -1,5 +1,3 @@
-import { Hourglass } from "lucide-react";
-
 import { PageHeader } from "@/components/layout/page-header";
 
 export function ComingSoon({
@@ -12,18 +10,13 @@ export function ComingSoon({
   phase: string;
 }) {
   return (
-    <div className="mx-auto grid max-w-6xl gap-6">
+    <div className="mx-auto grid max-w-[1180px] gap-6">
       <PageHeader title={title} description={description} />
-      <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed bg-background py-16 text-center">
-        <span className="flex size-12 items-center justify-center rounded-full bg-muted">
-          <Hourglass className="size-6 text-muted-foreground" />
-        </span>
-        <div>
-          <p className="font-medium">Disponible próximamente</p>
-          <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-            Esta sección se activará en la {phase} del desarrollo.
-          </p>
-        </div>
+      <div className="rounded-2xl border border-dashed border-line-soft bg-card px-6 py-16 text-center">
+        <p className="display text-[18px] text-ink">Disponible próximamente</p>
+        <p className="mx-auto mt-1.5 max-w-sm text-[14.5px] text-ink-primary">
+          Esta sección se activará en la {phase} del desarrollo.
+        </p>
       </div>
     </div>
   );

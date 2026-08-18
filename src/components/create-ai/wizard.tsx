@@ -1,12 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowRight, RotateCcw, Sparkles } from "lucide-react";
 
 import { generateFunnelAction } from "@/app/(app)/create-ai/actions";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -16,11 +15,10 @@ const GOAL_OPTIONS = [
   "Conseguir reservas",
   "Recomendar un producto",
   "Recomendar un servicio",
-  "Realizar un diagnóstico orientativo",
+  "Diagnóstico orientativo",
   "Segmentar clientes",
   "Captar solicitudes",
   "Crear un quiz",
-  "Otro",
 ];
 
 const ACTION_OPTIONS = [
@@ -31,49 +29,72 @@ const ACTION_OPTIONS = [
   "Visitar página",
   "Llamada",
   "Email",
-  "CTA personalizado",
+];
+
+const GENERATION_STEPS = [
+  "Analizando tu objetivo",
+  "Diseñando las preguntas",
+  "Creando la lógica de resultados",
+  "Redactando los textos",
+  "Preparando el CTA",
 ];
 
 interface StepDef {
-  key: "businessType" | "goal" | "product" | "audience" | "finalAction" | "additionalInfo";
+  key:
+    | "businessType"
+    | "goal"
+    | "product"
+    | "audience"
+    | "finalAction"
+    | "additionalInfo";
+  name: string;
   title: string;
   hint?: string;
   kind: "text" | "options";
   options?: string[];
   placeholder?: string;
+  rows?: number;
   optional?: boolean;
 }
 
 const STEPS: StepDef[] = [
   {
     key: "businessType",
+    name: "Negocio",
     title: "¿Qué tipo de negocio tienes?",
     hint: "Ej.: una clínica estética especializada en tratamientos faciales",
     kind: "text",
     placeholder: "Describe tu negocio…",
+    rows: 3,
   },
   {
     key: "goal",
+    name: "Objetivo",
     title: "¿Qué quieres conseguir?",
     kind: "options",
     options: GOAL_OPTIONS,
   },
   {
     key: "product",
+    name: "Oferta",
     title: "¿Qué producto o servicio quieres promocionar?",
     hint: "Ej.: tratamientos para flacidez facial con radiofrecuencia",
     kind: "text",
     placeholder: "Describe el producto o servicio…",
+    rows: 3,
   },
   {
     key: "audience",
+    name: "Audiencia",
     title: "¿Quién es tu público?",
-    hint: "Ej.: mujeres de 35 a 60 años preocupadas por el envejecimiento de la piel",
+    hint: "Ej.: mujeres de 35 a 60 años preocupadas por la firmeza de la piel",
     kind: "text",
     placeholder: "Describe a tu público…",
+    rows: 4,
   },
   {
     key: "finalAction",
+    name: "Acción final",
     title: "¿Cuál quieres que sea la acción final?",
     hint: "Lo que hará el visitante después de ver su resultado",
     kind: "options",
@@ -81,15 +102,25 @@ const STEPS: StepDef[] = [
   },
   {
     key: "additionalInfo",
-    title: "Cuéntame cualquier información adicional que debería conocer la IA",
+    name: "Contexto",
+    title: "¿Algo más que deba saber la IA?",
     hint: "Opcional: tu número de WhatsApp, la URL de reservas, el tono de tu marca, tratamientos concretos…",
     kind: "text",
     placeholder: "Escribe aquí (opcional)…",
+    rows: 5,
     optional: true,
   },
 ];
 
-type Phase = "wizard" | "generating" | "error";
+const REQUIRED_KEYS = [
+  "businessType",
+  "goal",
+  "product",
+  "audience",
+  "finalAction",
+] as const;
+
+type Phase = "wizard" | "generating" | "ready" | "error";
 
 export function CreateAiWizard() {
   const router = useRouter();
@@ -97,26 +128,23 @@ export function CreateAiWizard() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [phase, setPhase] = useState<Phase>("wizard");
   const [errorMessage, setErrorMessage] = useState("");
+  const [createdFunnelId, setCreatedFunnelId] = useState<string | null>(null);
 
   const step = STEPS[stepIndex];
   const isLast = stepIndex === STEPS.length - 1;
   const value = answers[step.key] ?? "";
   const canContinue = step.optional || value.trim().length >= 3;
+  const allAnswered = REQUIRED_KEYS.every(
+    (key) => (answers[key] ?? "").trim().length >= 3
+  );
 
   function setValue(next: string) {
     setAnswers((prev) => ({ ...prev, [step.key]: next }));
   }
 
-  function goNext() {
-    if (!isLast) {
-      setStepIndex((i) => i + 1);
-    }
-  }
-
   function selectOption(option: string) {
-    setValue(option);
-    // Auto-avanza tras elegir, como en un funnel de verdad.
-    setTimeout(() => setStepIndex((i) => Math.min(i + 1, STEPS.length - 1)), 150);
+    setAnswers((prev) => ({ ...prev, [step.key]: option }));
+    setTimeout(() => setStepIndex((i) => Math.min(i + 1, STEPS.length - 1)), 160);
   }
 
   async function generate() {
@@ -131,7 +159,8 @@ export function CreateAiWizard() {
         additionalInfo: answers.additionalInfo || undefined,
       });
       if (result && "funnelId" in result && result.funnelId) {
-        router.push(`/funnels/${result.funnelId}/edit`);
+        setCreatedFunnelId(result.funnelId);
+        setPhase("ready");
         return;
       }
       setErrorMessage(result?.error ?? "No se pudo generar el funnel.");
@@ -145,127 +174,243 @@ export function CreateAiWizard() {
   }
 
   if (phase === "generating") {
+    return <GeneratingScreen />;
+  }
+
+  if (phase === "ready" && createdFunnelId) {
     return (
-      <Card className="mx-auto w-full max-w-xl">
-        <CardContent className="flex flex-col items-center gap-4 py-16 text-center">
-          <span className="flex size-14 animate-pulse items-center justify-center rounded-full bg-primary/10">
-            <Sparkles className="size-7 text-primary" />
-          </span>
-          <div>
-            <p className="text-lg font-semibold">La IA está creando tu funnel…</p>
-            <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-              Preguntas, lógica, perfiles de resultado y textos. Suele tardar
-              menos de un minuto.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="mx-auto max-w-[720px] py-10 text-center">
+        <span className="mx-auto flex size-24 items-center justify-center rounded-[26px] bg-brand">
+          <svg
+            width="34"
+            height="34"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#FCFBF9"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </span>
+        <h1 className="display mt-7 text-[32px] text-ink">
+          Tu funnel está listo
+        </h1>
+        <p className="mx-auto mt-2 max-w-md text-[15px] text-ink-primary">
+          Revisa las preguntas, ajusta lo que quieras y publícalo cuando estés
+          conforme.
+        </p>
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+          <Button
+            size="lg"
+            onClick={() => router.push(`/funnels/${createdFunnelId}/edit`)}
+          >
+            Ver funnel
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link href="/funnels">Volver a mis funnels</Link>
+          </Button>
+        </div>
+      </div>
     );
   }
 
   if (phase === "error") {
     return (
-      <Card className="mx-auto w-full max-w-xl">
-        <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
-          <p className="text-lg font-semibold">No se pudo generar el funnel</p>
-          <p className="mx-auto max-w-sm text-sm text-muted-foreground">
-            {errorMessage}
-          </p>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setPhase("wizard")}>
-              Revisar respuestas
-            </Button>
-            <Button onClick={generate}>
-              <RotateCcw className="size-4" />
-              Reintentar
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="mx-auto max-w-[720px] py-10 text-center">
+        <h1 className="display text-[26px] text-ink">
+          No se pudo generar el funnel
+        </h1>
+        <p className="mx-auto mt-2 max-w-md text-[15px] text-ink-primary">
+          {errorMessage}
+        </p>
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
+          <Button onClick={generate}>Reintentar</Button>
+          <Button variant="outline" onClick={() => setPhase("wizard")}>
+            Revisar respuestas
+          </Button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="mx-auto w-full max-w-xl">
-      <CardContent className="grid gap-6 py-8">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+    <div className="mx-auto w-full max-w-[720px]">
+      <div className="mb-7">
+        <p className="micro-label">crear con ia</p>
+        <h1 className="display mt-2 text-[36px] text-ink">
+          Cuéntanos sobre tu negocio
+        </h1>
+        <p className="mt-2 text-[15px] text-ink-primary">
+          Seis preguntas rápidas y la IA construye tu funnel completo.
+        </p>
+      </div>
+
+      <div className="mb-5">
+        <div className="flex items-center justify-between text-[12.5px] text-ink-secondary">
+          <span>
             Paso {stepIndex + 1} de {STEPS.length}
-          </p>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-300"
-              style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
-            />
-          </div>
+          </span>
+          <span>{step.name}</span>
         </div>
-
-        <div>
-          <h2 className="text-balance text-xl font-semibold leading-snug">
-            {step.title}
-          </h2>
-          {step.hint ? (
-            <p className="mt-1 text-sm text-muted-foreground">{step.hint}</p>
-          ) : null}
-        </div>
-
-        {step.kind === "options" ? (
-          <div className="grid gap-2 sm:grid-cols-2">
-            {step.options!.map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => selectOption(option)}
-                className={cn(
-                  "rounded-lg border p-3 text-left text-sm font-medium transition-colors hover:border-primary/60",
-                  value === option
-                    ? "border-primary bg-primary/5"
-                    : "border-border"
-                )}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <Textarea
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder={step.placeholder}
-            rows={4}
-            maxLength={step.key === "additionalInfo" ? 2000 : 400}
-            autoFocus
+        <div className="mt-2 h-[3px] w-full overflow-hidden rounded-full bg-line">
+          <div
+            className="h-full rounded-full bg-brand transition-brand"
+            style={{
+              width: `${((stepIndex + 1) / STEPS.length) * 100}%`,
+              transitionDuration: "320ms",
+              transitionProperty: "width",
+            }}
           />
-        )}
+        </div>
+      </div>
 
-        <div className="flex items-center justify-between">
-          <Button
-            variant="ghost"
-            onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
-            disabled={stepIndex === 0}
-          >
-            <ArrowLeft className="size-4" />
-            Atrás
-          </Button>
-          {isLast ? (
-            <Button onClick={generate} disabled={!canContinueAll(answers)}>
-              <Sparkles className="size-4" />
-              Generar mi Funnel ✨
-            </Button>
+      <div className="min-h-[330px] rounded-2xl border border-line bg-card p-8">
+        <h2 className="display text-[26px] text-ink">{step.title}</h2>
+        {step.hint ? (
+          <p className="mt-2 text-[14px] text-ink-primary">{step.hint}</p>
+        ) : null}
+
+        <div className="mt-6">
+          {step.kind === "options" ? (
+            <div className="grid gap-2.5 sm:grid-cols-3">
+              {step.options!.map((option) => {
+                const selected = value === option;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => selectOption(option)}
+                    className={cn(
+                      "flex items-center gap-2.5 rounded-[14px] p-3.5 text-left text-[14px] transition-all transition-brand duration-150",
+                      selected
+                        ? "border-2 border-brand bg-surface font-medium"
+                        : "border border-line hover:border-line-soft hover:bg-[#F7F6F3]"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "size-[9px] shrink-0 rounded-full",
+                        selected ? "bg-brand" : "bg-line-soft"
+                      )}
+                    />
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
           ) : (
-            <Button onClick={goNext} disabled={!canContinue}>
-              Continuar
-              <ArrowRight className="size-4" />
-            </Button>
+            <Textarea
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder={step.placeholder}
+              rows={step.rows ?? 3}
+              maxLength={step.key === "additionalInfo" ? 2000 : 400}
+              autoFocus
+              className="rounded-[12px] border-line-soft text-[15px]"
+            />
           )}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      <div className="mt-5 flex items-center justify-between">
+        <Button
+          variant="outline"
+          onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
+          disabled={stepIndex === 0}
+        >
+          Atrás
+        </Button>
+        {isLast ? (
+          <Button size="lg" onClick={generate} disabled={!allAnswered}>
+            Generar funnel
+          </Button>
+        ) : (
+          <Button
+            size="lg"
+            onClick={() => setStepIndex((i) => i + 1)}
+            disabled={!canContinue}
+          >
+            Continuar
+          </Button>
+        )}
+      </div>
+    </div>
   );
 }
 
-function canContinueAll(answers: Record<string, string>): boolean {
-  return ["businessType", "goal", "product", "audience", "finalAction"].every(
-    (key) => (answers[key] ?? "").trim().length >= 3
+/** Pantalla de generación: tile óvalo petróleo + checklist de 5 pasos. */
+function GeneratingScreen() {
+  const [done, setDone] = useState(0);
+
+  useEffect(() => {
+    // El checklist avanza mientras la IA trabaja; el último paso queda
+    // pendiente hasta que la generación real termina.
+    const timer = setInterval(() => {
+      setDone((d) => (d < GENERATION_STEPS.length - 1 ? d + 1 : d));
+    }, 3500);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="mx-auto max-w-[720px] py-10 text-center">
+      <span
+        className="mx-auto flex size-24 items-center justify-center rounded-[26px] bg-brand"
+        aria-hidden
+      >
+        <span
+          className="size-9 animate-pulse bg-[#FCFBF9]"
+          style={{ borderRadius: "50% 50% 50% 50% / 42% 42% 58% 58%" }}
+        />
+      </span>
+      <h1 className="display mt-7 text-[32px] text-ink">
+        Creando tu funnel
+      </h1>
+      <p className="mx-auto mt-2 max-w-md text-[15px] text-ink-primary">
+        Suele tardar menos de un minuto. No cierres esta pestaña.
+      </p>
+
+      <ul className="mx-auto mt-8 grid max-w-sm gap-3 text-left">
+        {GENERATION_STEPS.map((label, i) => {
+          const complete = i < done;
+          return (
+            <li key={label} className="flex items-center gap-3">
+              <span
+                className={cn(
+                  "flex size-5 shrink-0 items-center justify-center rounded-full transition-colors transition-brand",
+                  complete ? "bg-brand" : "border border-line bg-transparent"
+                )}
+              >
+                {complete ? (
+                  <svg
+                    width="11"
+                    height="11"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#FCFBF9"
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                ) : null}
+              </span>
+              <span
+                className={cn(
+                  "text-[14.5px]",
+                  complete ? "text-ink" : "text-ink-secondary"
+                )}
+              >
+                {label}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

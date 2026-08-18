@@ -64,6 +64,7 @@ export function CtaTab({
           value: form.get("value"),
           whatsappMessage:
             form.get("whatsappMessage") ?? cta.whatsappMessage,
+          resultNote: form.get("resultNote") ?? "",
         },
       }),
       "CTA guardado."
@@ -137,6 +138,25 @@ export function CtaTab({
               </p>
             </div>
           ) : null}
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="cta-note">
+              Nota bajo el resultado{" "}
+              <span className="text-muted-foreground">(opcional)</span>
+            </Label>
+            <Textarea
+              id="cta-note"
+              name="resultNote"
+              defaultValue={cta.resultNote}
+              placeholder="Ej.: Este resultado es orientativo y no constituye un diagnóstico médico."
+              maxLength={300}
+              rows={2}
+            />
+            <p className="text-xs text-muted-foreground">
+              Útil en salud y estética para dejar claro que el resultado es
+              orientativo.
+            </p>
+          </div>
 
           <div>
             <Button type="submit" disabled={pending}>

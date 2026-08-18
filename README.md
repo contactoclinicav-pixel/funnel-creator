@@ -1,15 +1,18 @@
-# AI Funnel Creator
+# aifunnel
 
 SaaS AI-first para crear funnels interactivos de conversión sin programar.
 
 > **"Describe tu negocio y tu objetivo. La IA crea tu funnel listo para publicar."**
 
-Ver [PLAN.md](./PLAN.md) para la arquitectura completa, el modelo de datos y el plan de fases.
+Ver [PLAN.md](./PLAN.md) para la arquitectura completa, el modelo de datos y el
+plan de fases, y [design/identidad-visual.md](./design/identidad-visual.md) para
+el design handoff (paleta petróleo sobre marfil, Inter Tight / Inter, y la
+especificación de cada pantalla).
 
 ## Stack
 
 - **Next.js 16** (App Router) · TypeScript · React 19
-- **Tailwind CSS v4** + shadcn/ui (Radix)
+- **Tailwind CSS v4** + shadcn/ui (Radix) sobre los tokens de la identidad
 - **Prisma 7** + PostgreSQL
 - **Better Auth** (email + contraseña)
 - **Zod** para validación server-side

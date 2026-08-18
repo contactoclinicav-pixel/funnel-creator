@@ -118,6 +118,11 @@ export const ctaSchema = z.object({
     .default(
       "Hola, completé el test {{funnel_name}} y mi resultado fue {{result_name}}. Quisiera recibir más información."
     ),
+  /**
+   * Nota bajo el resultado (p.ej. "Este resultado es orientativo y no
+   * constituye un diagnóstico médico"). Vacío = no se muestra.
+   */
+  resultNote: z.string().trim().max(300).default(""),
 });
 export type CtaConfig = z.infer<typeof ctaSchema>;
 
@@ -205,6 +210,10 @@ export const funnelSnapshotSchema = z.object({
   funnelId: z.string(),
   name: z.string(),
   slug: z.string(),
+  /** Nombre comercial del workspace, mostrado en la cabecera pública. */
+  businessName: z.string().optional(),
+  /** Industria del funnel, usada como micro-label en la portada pública. */
+  industry: z.string().optional(),
   intro: introSchema,
   theme: themeSchema,
   leadCapture: leadCaptureSchema,

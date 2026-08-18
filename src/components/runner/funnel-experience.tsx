@@ -49,18 +49,20 @@ const FONT_CLASS: Record<string, string> = {
 };
 
 /**
- * Experiencia interactiva completa del funnel a partir de un snapshot.
- * La usa el preview del builder y la usará el runner público (Fase 4)
- * pasando callbacks reales de tracking/persistencia.
+ * Experiencia del visitante. La estructura, tipografía y espaciados siguen el
+ * design handoff; los colores vienen del tema del funnel (superficie
+ * white-label del negocio, no de la marca aifunnel).
  */
 export function FunnelExperience({
   snapshot,
   callbacks = {},
   className,
+  businessName,
 }: {
   snapshot: FunnelSnapshot;
   callbacks?: FunnelExperienceCallbacks;
   className?: string;
+  businessName?: string;
 }) {
   const questions = useMemo(() => orderedQuestions(snapshot), [snapshot]);
   const [screen, setScreen] = useState<Screen>({ kind: "intro" });
@@ -70,7 +72,7 @@ export function FunnelExperience({
 
   const theme = snapshot.theme;
   const leadBefore = snapshot.leadCapture.position === "before_result";
-  const buttonRadius = theme.buttonRadius === "full" ? "9999px" : "0.5rem";
+  const buttonRadius = theme.buttonRadius === "full" ? "9999px" : "12px";
 
   const result = useMemo(
     () => computeResult(snapshot, answers),
@@ -100,10 +102,6 @@ export function FunnelExperience({
     }
   }
 
-  function goToQuestion(index: number) {
-    setScreen({ kind: "question", index });
-  }
-
   function finishQuestions(finalAnswers: AnswerMap) {
     callbacks.onComplete?.(finalAnswers);
     if (leadBefore && hasLeadForm(snapshot)) {
@@ -122,21 +120,15 @@ export function FunnelExperience({
 
     if (screen.kind !== "question") return;
     const next = nextQuestionIndex(snapshot, screen.index, nextAnswers);
-    if (next === null) {
-      finishQuestions(nextAnswers);
-    } else {
-      goToQuestion(next);
-    }
+    if (next === null) finishQuestions(nextAnswers);
+    else setScreen({ kind: "question", index: next });
   }
 
   function skipQuestion() {
     if (screen.kind !== "question") return;
     const next = nextQuestionIndex(snapshot, screen.index, answers);
-    if (next === null) {
-      finishQuestions(answers);
-    } else {
-      goToQuestion(next);
-    }
+    if (next === null) finishQuestions(answers);
+    else setScreen({ kind: "question", index: next });
   }
 
   function submitLead(data: LeadData) {
@@ -150,6 +142,7 @@ export function FunnelExperience({
     }
   }
 
+  const ink = readableText(theme.backgroundColor);
   const progress =
     questions.length === 0
       ? 0
@@ -165,35 +158,61 @@ export function FunnelExperience({
       style={
         {
           backgroundColor: theme.backgroundColor,
-          color: readableText(theme.backgroundColor),
+          color: ink,
           "--funnel-primary": theme.primaryColor,
           "--funnel-radius": buttonRadius,
+          "--funnel-ink-soft": `color-mix(in srgb, ${ink} 62%, transparent)`,
+          "--funnel-line": `color-mix(in srgb, ${ink} 14%, transparent)`,
         } as React.CSSProperties
       }
     >
-      {screen.kind === "question" && questions.length > 0 ? (
-        <div className="px-6 pt-5">
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-black/10">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${progress}%`, backgroundColor: theme.primaryColor }}
+      {/* Header 56px con el nombre del negocio */}
+      {businessName || theme.logoUrl ? (
+        <header
+          className="flex h-14 shrink-0 items-center px-5 md:px-8"
+          style={{ borderBottom: "1px solid var(--funnel-line)" }}
+        >
+          {theme.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- logo definido por el usuario
+            <img
+              src={theme.logoUrl}
+              alt={businessName ?? ""}
+              className="h-7 w-auto object-contain"
             />
+          ) : (
+            <span className="text-[15px] font-semibold">{businessName}</span>
+          )}
+        </header>
+      ) : null}
+
+      {screen.kind === "question" && questions.length > 0 ? (
+        <div className="px-5 pt-5 md:px-8">
+          <div className="mx-auto w-full max-w-[640px]">
+            <div
+              className="h-[2px] w-full overflow-hidden rounded-full"
+              style={{ backgroundColor: "var(--funnel-line)" }}
+            >
+              <div
+                className="h-full rounded-full transition-all duration-300"
+                style={{
+                  width: `${progress}%`,
+                  backgroundColor: theme.primaryColor,
+                }}
+              />
+            </div>
           </div>
-          <p className="mt-1.5 text-xs opacity-60">{progress}% completado</p>
         </div>
       ) : null}
 
-      <div className="flex flex-1 flex-col items-center justify-center px-6 py-10">
+      <div className="flex flex-1 flex-col justify-center px-5 py-8 md:px-8 md:py-12">
         {screen.kind === "intro" ? (
           <IntroScreen
             snapshot={snapshot}
+            questionCount={questions.length}
             onStart={() => {
               callbacks.onStart?.();
-              if (questions.length > 0) {
-                goToQuestion(0);
-              } else {
-                finishQuestions({});
-              }
+              if (questions.length > 0) setScreen({ kind: "question", index: 0 });
+              else finishQuestions({});
             }}
           />
         ) : null}
@@ -226,10 +245,13 @@ export function FunnelExperience({
         ) : null}
 
         {screen.kind === "thanks" ? (
-          <div className="w-full max-w-md text-center">
-            <h2 className="text-2xl font-semibold">¡Gracias!</h2>
-            <p className="mt-2 opacity-70">
-              Hemos recibido tus datos. Este es tu siguiente paso:
+          <div className="mx-auto w-full max-w-[560px] text-center">
+            <p className="micro-label" style={{ color: "var(--funnel-ink-soft)" }}>
+              gracias
+            </p>
+            <h2 className="display mt-3 text-[32px]">Hemos recibido tus datos</h2>
+            <p className="mt-3 text-[15px]" style={{ color: "var(--funnel-ink-soft)" }}>
+              Este es tu siguiente paso.
             </p>
             <CtaButton
               cta={activeCta}
@@ -239,6 +261,15 @@ export function FunnelExperience({
           </div>
         ) : null}
       </div>
+
+      <footer className="px-5 pb-6 text-center md:px-8">
+        <span className="text-[12px]" style={{ color: "var(--funnel-ink-soft)" }}>
+          Powered by{" "}
+          <span className="font-display font-bold lowercase tracking-[-0.05em]">
+            aifunnel
+          </span>
+        </span>
+      </footer>
     </div>
   );
 }
@@ -253,38 +284,75 @@ function readableText(background: string): string {
   const g = parseInt(hex.slice(2, 4), 16);
   const b = parseInt(hex.slice(4, 6), 16);
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.55 ? "#171717" : "#fafafa";
+  return luminance > 0.55 ? "#403C38" : "#FCFBF9";
 }
 
-// ── Pantallas ─────────────────────────────────────────────
+/** Placeholder de fotografía con la dirección de arte del handoff. */
+function PhotoPlaceholder({
+  label,
+  ratio,
+  className,
+}: {
+  label: string;
+  ratio: string;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-center rounded-2xl",
+        className
+      )}
+      style={{
+        background:
+          "repeating-linear-gradient(112deg,#E5E3DF 0 12px,#EDEBE7 12px 24px)",
+        aspectRatio: ratio,
+      }}
+    >
+      <span className="micro-label text-[#85817B]">{label}</span>
+    </div>
+  );
+}
 
 function IntroScreen({
   snapshot,
+  questionCount,
   onStart,
 }: {
   snapshot: FunnelSnapshot;
+  questionCount: number;
   onStart: () => void;
 }) {
-  const { intro, theme } = snapshot;
+  const { intro } = snapshot;
   return (
-    <div className="w-full max-w-md text-center">
-      {theme.logoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element -- logo externo definido por el usuario
-        <img
-          src={theme.logoUrl}
-          alt=""
-          className="mx-auto mb-6 h-12 w-auto object-contain"
-        />
-      ) : null}
-      <h1 className="text-balance text-3xl font-semibold leading-tight">
-        {intro.headline}
-      </h1>
-      {intro.subheadline ? (
-        <p className="mt-3 text-balance opacity-70">{intro.subheadline}</p>
-      ) : null}
-      <PrimaryButton onClick={onStart} className="mt-8">
-        {intro.buttonText}
-      </PrimaryButton>
+    <div className="mx-auto grid w-full max-w-[1040px] items-center gap-10 md:grid-cols-2">
+      <div>
+        <p className="micro-label" style={{ color: "var(--funnel-ink-soft)" }}>
+          {snapshot.industry || "descúbrelo en 2 minutos"}
+        </p>
+        <h1 className="display mt-4 text-balance text-[32px] leading-[1.08] md:text-[52px]">
+          {intro.headline}
+        </h1>
+        {intro.subheadline ? (
+          <p
+            className="mt-4 text-balance text-[16px] leading-[1.5]"
+            style={{ color: "var(--funnel-ink-soft)" }}
+          >
+            {intro.subheadline}
+          </p>
+        ) : null}
+        <PrimaryButton onClick={onStart} className="mt-8 h-14 md:max-w-[280px]">
+          {intro.buttonText}
+        </PrimaryButton>
+        <p className="mt-3 text-[13px]" style={{ color: "var(--funnel-ink-soft)" }}>
+          {questionCount} preguntas · menos de 3 minutos
+        </p>
+      </div>
+      <PhotoPlaceholder
+        label="[PHOTO-HERO] · 4:5"
+        ratio="4 / 5"
+        className="hidden max-h-[440px] md:flex"
+      />
     </div>
   );
 }
@@ -320,27 +388,27 @@ function QuestionScreen({
 
   function submitTextual() {
     if (question.required && textValue.trim().length === 0) return;
-    onSubmit(
-      question.type === "NUMBER" ? Number(textValue) : textValue.trim()
-    );
+    onSubmit(question.type === "NUMBER" ? Number(textValue) : textValue.trim());
   }
 
   return (
-    <div className="w-full max-w-md">
-      <p className="text-xs font-medium uppercase tracking-wide opacity-50">
-        Pregunta {position} / {total}
+    <div className="mx-auto w-full max-w-[640px]">
+      <p className="text-[13px]" style={{ color: "var(--funnel-ink-soft)" }}>
+        Pregunta {position} de {total}
       </p>
-      <h2 className="mt-2 text-balance text-2xl font-semibold leading-snug">
+      <h2 className="display mt-3 text-balance text-[27px] leading-[1.15] md:text-[36px]">
         {question.title}
       </h2>
       {question.description ? (
-        <p className="mt-2 text-sm opacity-70">{question.description}</p>
+        <p className="mt-2.5 text-[15px]" style={{ color: "var(--funnel-ink-soft)" }}>
+          {question.description}
+        </p>
       ) : null}
 
-      <div className="mt-6 grid gap-2.5">
+      <div className="mt-7 grid gap-2.5">
         {(question.type === "SINGLE_CHOICE" || question.type === "YES_NO") &&
           question.options.map((option) => (
-            <OptionButton
+            <OptionRow
               key={option.id}
               label={option.label}
               selected={false}
@@ -353,7 +421,7 @@ function QuestionScreen({
             {question.options.map((option) => {
               const selected = multiValue.includes(option.id);
               return (
-                <OptionButton
+                <OptionRow
                   key={option.id}
                   label={option.label}
                   selected={selected}
@@ -368,7 +436,7 @@ function QuestionScreen({
               );
             })}
             <PrimaryButton
-              className="mt-3"
+              className="mt-4"
               disabled={question.required && multiValue.length === 0}
               onClick={() => onSubmit(multiValue)}
             >
@@ -379,7 +447,7 @@ function QuestionScreen({
 
         {question.type === "SCALE" ? (
           <div>
-            <div className="flex justify-center gap-2">
+            <div className="flex flex-wrap justify-center gap-2.5">
               {Array.from(
                 { length: Math.max(0, scaleMax - scaleMin + 1) },
                 (_, i) => scaleMin + i
@@ -388,10 +456,10 @@ function QuestionScreen({
                   key={n}
                   type="button"
                   onClick={() => onSubmit(n)}
-                  className="flex size-11 items-center justify-center border text-sm font-semibold transition-transform hover:scale-105"
+                  className="flex size-12 items-center justify-center text-[15px] font-semibold transition-all duration-150 hover:opacity-80"
                   style={{
                     borderRadius: "var(--funnel-radius)",
-                    borderColor: "var(--funnel-primary)",
+                    border: "1px solid var(--funnel-line)",
                   }}
                 >
                   {n}
@@ -399,7 +467,10 @@ function QuestionScreen({
               ))}
             </div>
             {settings.scaleMinLabel || settings.scaleMaxLabel ? (
-              <div className="mt-2 flex justify-between text-xs opacity-60">
+              <div
+                className="mt-3 flex justify-between text-[12.5px]"
+                style={{ color: "var(--funnel-ink-soft)" }}
+              >
                 <span>{settings.scaleMinLabel}</span>
                 <span>{settings.scaleMaxLabel}</span>
               </div>
@@ -418,8 +489,11 @@ function QuestionScreen({
                 onChange={(e) => setTextValue(e.target.value)}
                 placeholder={settings.placeholder || "Escribe aquí…"}
                 rows={3}
-                className="w-full border bg-white/60 p-3 text-sm text-neutral-900 outline-none focus:ring-2"
-                style={{ borderRadius: "var(--funnel-radius)" }}
+                className="w-full bg-white/70 p-4 text-[15px] text-[#403C38] outline-none focus:ring-2"
+                style={{
+                  borderRadius: "var(--funnel-radius)",
+                  border: "1px solid var(--funnel-line)",
+                }}
               />
             ) : (
               <input
@@ -427,8 +501,11 @@ function QuestionScreen({
                 value={textValue}
                 onChange={(e) => setTextValue(e.target.value)}
                 placeholder={settings.placeholder || "Escribe aquí…"}
-                className="w-full border bg-white/60 p-3 text-sm text-neutral-900 outline-none focus:ring-2"
-                style={{ borderRadius: "var(--funnel-radius)" }}
+                className="w-full bg-white/70 p-4 text-[15px] text-[#403C38] outline-none focus:ring-2"
+                style={{
+                  borderRadius: "var(--funnel-radius)",
+                  border: "1px solid var(--funnel-line)",
+                }}
               />
             )}
             <PrimaryButton
@@ -445,7 +522,8 @@ function QuestionScreen({
           <button
             type="button"
             onClick={onSkip}
-            className="mt-1 text-sm underline-offset-4 opacity-60 hover:underline"
+            className="mt-1 text-[14px] underline-offset-4 hover:underline"
+            style={{ color: "var(--funnel-ink-soft)" }}
           >
             Omitir
           </button>
@@ -468,18 +546,18 @@ function LeadScreen({
   const [consent, setConsent] = useState(false);
 
   const valid =
-    fields.every(
-      (f) => !f.required || (values[f.key] ?? "").trim().length > 0
-    ) &&
+    fields.every((f) => !f.required || (values[f.key] ?? "").trim().length > 0) &&
     (!config.consent.enabled || consent);
 
   return (
-    <div className="w-full max-w-md">
-      <h2 className="text-balance text-2xl font-semibold">{config.title}</h2>
-      <div className="mt-6 grid gap-3">
+    <div className="mx-auto w-full max-w-[560px]">
+      <h2 className="display text-balance text-[27px] leading-[1.15] md:text-[32px]">
+        {config.title}
+      </h2>
+      <div className="mt-7 grid gap-3.5">
         {fields.map((field) => (
-          <div key={field.key} className="grid gap-1">
-            <label className="text-sm font-medium">
+          <div key={field.key} className="grid gap-1.5">
+            <label className="text-[13.5px] font-medium">
               {field.label}
               {field.required ? " *" : ""}
             </label>
@@ -495,13 +573,19 @@ function LeadScreen({
               onChange={(e) =>
                 setValues((prev) => ({ ...prev, [field.key]: e.target.value }))
               }
-              className="w-full border bg-white/60 p-3 text-sm text-neutral-900 outline-none focus:ring-2"
-              style={{ borderRadius: "var(--funnel-radius)" }}
+              className="w-full bg-white/70 p-3.5 text-[15px] text-[#403C38] outline-none focus:ring-2"
+              style={{
+                borderRadius: "var(--funnel-radius)",
+                border: "1px solid var(--funnel-line)",
+              }}
             />
           </div>
         ))}
         {config.consent.enabled ? (
-          <label className="flex items-start gap-2 text-sm opacity-80">
+          <label
+            className="flex items-start gap-2.5 text-[13px]"
+            style={{ color: "var(--funnel-ink-soft)" }}
+          >
             <input
               type="checkbox"
               checked={consent}
@@ -512,7 +596,7 @@ function LeadScreen({
           </label>
         ) : null}
         <PrimaryButton
-          className="mt-2"
+          className="mt-2 h-14"
           disabled={!valid}
           onClick={() =>
             onSubmit({
@@ -549,64 +633,81 @@ function ResultScreen({
   onContinueToLead: () => void;
 }) {
   return (
-    <div className="w-full max-w-md text-center">
-      <p className="text-xs font-medium uppercase tracking-wide opacity-50">
-        Tu resultado
+    <div className="mx-auto w-full max-w-[640px]">
+      {profile?.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- imagen definida por el usuario
+        <img
+          src={profile.imageUrl}
+          alt=""
+          className="mb-7 max-h-[240px] w-full rounded-2xl object-cover"
+        />
+      ) : (
+        <PhotoPlaceholder
+          label="[PHOTO-RESULT] · 16:9"
+          ratio="16 / 9"
+          className="mb-7 max-h-[240px]"
+        />
+      )}
+
+      <p className="micro-label" style={{ color: "var(--funnel-ink-soft)" }}>
+        tu resultado
       </p>
+
       {profile ? (
         <>
-          {profile.imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- imagen definida por el usuario
-            <img
-              src={profile.imageUrl}
-              alt=""
-              className="mx-auto mt-4 max-h-40 w-auto rounded-lg object-cover"
-            />
-          ) : null}
-          <h2 className="mt-3 text-balance text-3xl font-semibold">
+          <h2 className="display mt-3 text-balance text-[30px] leading-[1.1] md:text-[40px]">
             {profile.title}
           </h2>
           {profile.description ? (
-            <p className="mt-3 opacity-75">{profile.description}</p>
+            <p
+              className="mt-4 text-[15.5px] leading-[1.5]"
+              style={{ color: "var(--funnel-ink-soft)" }}
+            >
+              {profile.description}
+            </p>
           ) : null}
           {profile.recommendation ? (
             <div
-              className="mt-4 border p-4 text-left text-sm"
+              className="mt-6 p-5"
               style={{
-                borderRadius: "var(--funnel-radius)",
-                borderColor: "var(--funnel-primary)",
+                borderRadius: "14px",
+                border: "1px solid var(--funnel-line)",
               }}
             >
-              <p className="font-medium">Nuestra recomendación</p>
-              <p className="mt-1 opacity-80">{profile.recommendation}</p>
+              <p className="micro-label" style={{ color: "var(--funnel-ink-soft)" }}>
+                recomendación
+              </p>
+              <p className="mt-2 text-[15px] leading-[1.5]">
+                {profile.recommendation}
+              </p>
             </div>
           ) : null}
         </>
       ) : (
-        <>
-          <h2 className="mt-3 text-balance text-3xl font-semibold">
-            ¡Listo! Hemos registrado tus respuestas.
-          </h2>
-          <p className="mt-3 opacity-75">
-            {snapshot.profiles.length === 0
-              ? "Configura perfiles de resultado para mostrar aquí una recomendación personalizada."
-              : ""}
-          </p>
-        </>
+        <h2 className="display mt-3 text-balance text-[30px] leading-[1.1] md:text-[40px]">
+          Hemos registrado tus respuestas
+        </h2>
       )}
 
       {needsLeadAfter ? (
-        <PrimaryButton className="mt-8" onClick={onContinueToLead}>
+        <PrimaryButton className="mt-8 h-14" onClick={onContinueToLead}>
           Continuar
         </PrimaryButton>
       ) : (
         <CtaButton cta={cta} href={ctaHref} onClick={onCtaClick} />
       )}
+
+      {snapshot.cta.resultNote ? (
+        <p
+          className="mt-5 text-[12.5px] leading-[1.5]"
+          style={{ color: "var(--funnel-ink-soft)" }}
+        >
+          {snapshot.cta.resultNote}
+        </p>
+      ) : null}
     </div>
   );
 }
-
-// ── Piezas ────────────────────────────────────────────────
 
 function PrimaryButton({
   children,
@@ -625,7 +726,7 @@ function PrimaryButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "inline-flex min-h-11 w-full items-center justify-center px-6 text-sm font-semibold text-white transition-opacity disabled:opacity-40",
+        "inline-flex min-h-[52px] w-full items-center justify-center px-6 text-[15px] font-semibold text-white transition-opacity disabled:opacity-40",
         className
       )}
       style={{
@@ -638,7 +739,8 @@ function PrimaryButton({
   );
 }
 
-function OptionButton({
+/** Fila de opción del handoff: padding 20px, radius 14px, dot 9px. */
+function OptionRow({
   label,
   selected,
   onClick,
@@ -651,16 +753,26 @@ function OptionButton({
     <button
       type="button"
       onClick={onClick}
-      className={cn(
-        "w-full border p-3.5 text-left text-sm font-medium transition-colors",
-        selected && "text-white"
-      )}
+      className="flex w-full items-center gap-3 p-5 text-left text-[15px] font-medium transition-all duration-150"
       style={{
-        borderRadius: "var(--funnel-radius)",
-        borderColor: "var(--funnel-primary)",
-        backgroundColor: selected ? "var(--funnel-primary)" : "transparent",
+        borderRadius: "14px",
+        border: selected
+          ? "2px solid var(--funnel-primary)"
+          : "1px solid var(--funnel-line)",
+        backgroundColor: selected
+          ? "color-mix(in srgb, var(--funnel-primary) 7%, transparent)"
+          : "transparent",
+        padding: selected ? "19px" : "20px",
       }}
     >
+      <span
+        className="size-[9px] shrink-0 rounded-full"
+        style={{
+          backgroundColor: selected
+            ? "var(--funnel-primary)"
+            : "var(--funnel-line)",
+        }}
+      />
       {label}
     </button>
   );
@@ -677,7 +789,7 @@ function CtaButton({
 }) {
   if (!cta.value) {
     return (
-      <p className="mt-8 text-xs opacity-50">
+      <p className="mt-8 text-[12.5px]" style={{ color: "var(--funnel-ink-soft)" }}>
         Configura el CTA para mostrar aquí el botón de acción.
       </p>
     );
@@ -688,7 +800,7 @@ function CtaButton({
       target={href.startsWith("http") ? "_blank" : undefined}
       rel="noopener noreferrer"
       onClick={onClick}
-      className="mt-8 inline-flex min-h-11 w-full max-w-md items-center justify-center px-6 text-sm font-semibold text-white"
+      className="mt-8 inline-flex min-h-14 w-full items-center justify-center px-6 text-[15px] font-semibold text-white"
       style={{
         backgroundColor: "var(--funnel-primary)",
         borderRadius: "var(--funnel-radius)",

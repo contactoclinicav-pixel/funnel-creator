@@ -15,24 +15,52 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
+/** Estados de lead con la paleta del sistema: petróleo, arena y marfil. */
 export const LEAD_STATUS_CONFIG: Record<
   string,
-  { label: string; className: string }
+  { label: string; className: string; dot: string }
 > = {
-  NEW: { label: "Nuevo", className: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300" },
-  CONTACTED: { label: "Contactado", className: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" },
-  QUALIFIED: { label: "Calificado", className: "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-300" },
-  CONVERTED: { label: "Convertido", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" },
-  LOST: { label: "Perdido", className: "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400" },
+  NEW: {
+    label: "Nuevo",
+    className: "bg-brand-tint text-brand",
+    dot: "bg-brand",
+  },
+  CONTACTED: {
+    label: "Contactado",
+    className: "bg-draft text-draft-foreground",
+    dot: "bg-draft-foreground",
+  },
+  QUALIFIED: {
+    label: "Calificado",
+    className: "bg-[#E4EAEE] text-[#3E6076]",
+    dot: "bg-[#3E6076]",
+  },
+  CONVERTED: {
+    label: "Convertido",
+    className: "bg-brand text-[#FCFBF9]",
+    dot: "bg-[#7FA8C4]",
+  },
+  LOST: {
+    label: "Perdido",
+    className: "bg-archived text-archived-foreground",
+    dot: "bg-archived-foreground",
+  },
 };
 
 export function LeadStatusBadge({ status }: { status: string }) {
   const config = LEAD_STATUS_CONFIG[status] ?? {
     label: status,
-    className: "",
+    className: "bg-muted text-ink-secondary",
+    dot: "bg-ink-secondary",
   };
   return (
-    <Badge variant="secondary" className={cn("border-transparent", config.className)}>
+    <Badge
+      variant="secondary"
+      className={cn(
+        "rounded-full border-transparent px-2.5 py-[3px] text-[12px] font-medium",
+        config.className
+      )}
+    >
       {config.label}
     </Badge>
   );
@@ -79,12 +107,7 @@ export function LeadStatusSelect({
       <DropdownMenuContent align="start">
         {Object.entries(LEAD_STATUS_CONFIG).map(([value, config]) => (
           <DropdownMenuItem key={value} onClick={() => change(value)}>
-            <span
-              className={cn(
-                "size-2 rounded-full",
-                config.className.split(" ")[0]
-              )}
-            />
+            <span className={cn("size-2 rounded-full", config.dot)} />
             {config.label}
           </DropdownMenuItem>
         ))}

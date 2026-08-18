@@ -99,6 +99,7 @@ async function createFunnelFromGeneration(
     whatsappMessage:
       generation.cta.whatsappMessage ||
       "Hola, completé el test {{funnel_name}} y mi resultado fue {{result_name}}. Quisiera recibir más información.",
+    resultNote: generation.cta.resultNote ?? "",
   };
 
   await prisma.$transaction(async (tx) => {

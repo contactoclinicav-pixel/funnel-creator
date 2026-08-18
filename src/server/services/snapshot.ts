@@ -31,6 +31,7 @@ export async function compileFunnelSnapshot(
       },
       profiles: { orderBy: { order: "asc" } },
       logicRules: true,
+      workspace: { select: { name: true, brand: { select: { businessName: true } } } },
     },
   });
   if (!funnel) return null;
@@ -39,6 +40,9 @@ export async function compileFunnelSnapshot(
     funnelId: funnel.id,
     name: funnel.name,
     slug: funnel.slug,
+    businessName:
+      funnel.workspace.brand?.businessName?.trim() || undefined,
+    industry: funnel.industry?.trim() || undefined,
     intro: parseIntro(funnel.intro),
     theme: parseTheme(funnel.theme),
     leadCapture: parseLeadCapture(funnel.leadCapture),

@@ -1,18 +1,7 @@
 import Link from "next/link";
-import { Users } from "lucide-react";
 
-import { PageHeader } from "@/components/layout/page-header";
+import { PageHeader, UnderlineTabs } from "@/components/layout/page-header";
 import { LeadStatusBadge } from "@/components/leads/lead-status";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { cn } from "@/lib/utils";
 import { requireWorkspace } from "@/server/context";
 import { listLeads } from "@/server/services/lead";
 import { prisma } from "@/lib/db";
@@ -33,7 +22,8 @@ export default async function LeadsPage({ searchParams }: PageProps<"/leads">) {
   const ctx = await requireWorkspace();
   const params = await searchParams;
   const filterKey = typeof params.estado === "string" ? params.estado : "todos";
-  const filter = STATUS_FILTERS.find((f) => f.key === filterKey) ?? STATUS_FILTERS[0];
+  const filter =
+    STATUS_FILTERS.find((f) => f.key === filterKey) ?? STATUS_FILTERS[0];
   const funnelId = typeof params.funnel === "string" ? params.funnel : undefined;
 
   const [leads, funnelFilter] = await Promise.all([
@@ -49,130 +39,119 @@ export default async function LeadsPage({ searchParams }: PageProps<"/leads">) {
   const dateFormatter = new Intl.DateTimeFormat("es", {
     day: "numeric",
     month: "short",
-    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
 
   function filterHref(key: string) {
-    const params = new URLSearchParams();
-    if (key !== "todos") params.set("estado", key);
-    if (funnelId) params.set("funnel", funnelId);
-    const qs = params.toString();
+    const next = new URLSearchParams();
+    if (key !== "todos") next.set("estado", key);
+    if (funnelId) next.set("funnel", funnelId);
+    const qs = next.toString();
     return qs ? `/leads?${qs}` : "/leads";
   }
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-6">
+    <div className="mx-auto grid max-w-[1180px] gap-6">
       <PageHeader
         title="Leads"
         description={
           funnelFilter
-            ? `Leads del funnel «${funnelFilter.name}».`
-            : "Contactos captados por tus funnels."
+            ? `Leads del funnel «${funnelFilter.name}»`
+            : `${leads.length} contactos captados por tus funnels`
+        }
+        actions={
+          funnelFilter ? (
+            <Link
+              href="/leads"
+              className="text-[13.5px] font-medium text-brand underline-offset-4 hover:underline"
+            >
+              Quitar filtro de funnel
+            </Link>
+          ) : undefined
         }
       />
 
-      <div className="flex flex-wrap items-center gap-1">
-        {STATUS_FILTERS.map((f) => (
-          <Link
-            key={f.key}
-            href={filterHref(f.key)}
-            className={cn(
-              "rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
-              f.key === filter.key
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
-            {f.label}
-          </Link>
-        ))}
-        {funnelFilter ? (
-          <Link
-            href="/leads"
-            className="ml-2 text-xs text-muted-foreground underline underline-offset-4"
-          >
-            Quitar filtro de funnel
-          </Link>
-        ) : null}
-      </div>
+      <UnderlineTabs
+        activeKey={filter.key}
+        items={STATUS_FILTERS.map((f) => ({
+          key: f.key,
+          label: f.label,
+          href: filterHref(f.key),
+        }))}
+      />
 
       {leads.length === 0 ? (
-        <Card>
-          <CardContent>
-            <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed py-12 text-center">
-              <span className="flex size-12 items-center justify-center rounded-full bg-primary/10">
-                <Users className="size-6 text-primary" />
-              </span>
-              <div>
-                <p className="font-medium">
-                  {filter.status
-                    ? `No hay leads en «${filter.label}»`
-                    : "Todavía no tienes leads"}
-                </p>
-                <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-                  Publica un funnel y comparte su enlace para empezar a captar
-                  contactos.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="rounded-2xl border border-dashed border-line-soft bg-card px-6 py-16 text-center">
+          <p className="display text-[18px] text-ink">
+            {filter.status
+              ? `No hay leads en «${filter.label}»`
+              : "Todavía no tienes leads"}
+          </p>
+          <p className="mx-auto mt-1.5 max-w-sm text-[14.5px] text-ink-primary">
+            Publica un funnel y comparte su enlace para empezar a captar
+            contactos.
+          </p>
+        </div>
       ) : (
-        <Card className="py-0">
-          <CardContent className="overflow-x-auto px-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="pl-6">Nombre</TableHead>
-                  <TableHead>Contacto</TableHead>
-                  <TableHead>Funnel</TableHead>
-                  <TableHead>Resultado</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead className="pr-6">Estado</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+        <div className="overflow-hidden rounded-2xl border border-line bg-card">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] border-collapse">
+              <thead>
+                <tr className="bg-[#F7F6F3] text-left">
+                  {["Nombre", "Contacto", "Funnel", "Resultado", "Fecha", "Estado"].map(
+                    (label, i) => (
+                      <th
+                        key={label}
+                        className={`px-4 py-2.5 text-[11.5px] font-semibold uppercase tracking-[0.045em] text-ink-secondary ${
+                          i === 0 ? "pl-6" : ""
+                        } ${i === 5 ? "pr-6" : ""}`}
+                      >
+                        {label}
+                      </th>
+                    )
+                  )}
+                </tr>
+              </thead>
+              <tbody>
                 {leads.map((lead) => (
-                  <TableRow key={lead.id}>
-                    <TableCell className="pl-6">
+                  <tr
+                    key={lead.id}
+                    className="border-t border-[#F1F0ED] transition-colors hover:bg-[#F7F6F3]"
+                  >
+                    <td className="py-3 pl-6 pr-4">
                       <Link
                         href={`/leads/${lead.id}`}
-                        className="font-medium hover:underline"
+                        className="text-[14.5px] font-medium text-ink hover:underline"
                       >
                         {lead.name || "Sin nombre"}
                       </Link>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-ink-primary">
                       <p>{lead.email || "—"}</p>
-                      {lead.phone ? <p>{lead.phone}</p> : null}
-                    </TableCell>
-                    <TableCell className="max-w-44 truncate text-sm">
+                      {lead.phone ? (
+                        <p className="text-ink-secondary">{lead.phone}</p>
+                      ) : null}
+                    </td>
+                    <td className="max-w-44 truncate px-4 py-3 text-[13.5px] text-ink">
                       {lead.funnel.name}
-                    </TableCell>
-                    <TableCell className="max-w-40 truncate text-sm">
+                    </td>
+                    <td className="max-w-40 truncate px-4 py-3 text-[13.5px] text-ink">
                       {lead.resultTitle ?? "—"}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    </td>
+                    <td className="px-4 py-3 text-[13px] text-ink-secondary">
                       {dateFormatter.format(lead.createdAt)}
-                    </TableCell>
-                    <TableCell className="pr-6">
+                    </td>
+                    <td className="py-3 pl-4 pr-6">
                       <LeadStatusBadge status={lead.status} />
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
-
-      {leads.length === 200 ? (
-        <p className="text-center text-xs text-muted-foreground">
-          Mostrando los 200 leads más recientes.
-        </p>
-      ) : null}
     </div>
   );
 }

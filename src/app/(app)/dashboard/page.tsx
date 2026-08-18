@@ -1,158 +1,183 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import {
-  BarChart3,
-  CheckCircle2,
-  Eye,
-  Filter,
-  Play,
-  Plus,
-  Sparkles,
-  Target,
-  Users,
-} from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
+import { KpiCard } from "@/components/dashboard/kpi-card";
+import { PerformanceCard } from "@/components/dashboard/performance-card";
+import { FunnelStatusBadge } from "@/components/funnels/status-badge";
+import { FunnelThumb } from "@/components/funnels/funnel-thumb";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { requireWorkspace } from "@/server/context";
 import {
   getDashboardMetrics,
+  getDashboardSeries,
   getRecentFunnels,
 } from "@/server/services/dashboard";
 
 export const metadata = { title: "Dashboard" };
 
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: "Borrador",
-  PUBLISHED: "Publicado",
-  ARCHIVED: "Archivado",
-};
+const RANGE_VALUES = [7, 30, 90];
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: PageProps<"/dashboard">) {
   const ctx = await requireWorkspace();
-  const [metrics, recentFunnels] = await Promise.all([
-    getDashboardMetrics(ctx),
+  const params = await searchParams;
+  const requested = Number(params.dias);
+  const days = RANGE_VALUES.includes(requested) ? requested : 30;
+
+  const [metrics, series, recentFunnels] = await Promise.all([
+    getDashboardMetrics(ctx, days),
+    getDashboardSeries(ctx, days),
     getRecentFunnels(ctx),
   ]);
 
-  const cards = [
-    { label: "Funnels activos", value: metrics.activeFunnels, icon: Filter },
-    { label: "Visitas", value: metrics.views, icon: Eye },
-    { label: "Funnels iniciados", value: metrics.starts, icon: Play },
-    { label: "Funnels completados", value: metrics.completions, icon: CheckCircle2 },
-    { label: "Leads", value: metrics.leads, icon: Users },
-    { label: "Conversiones", value: metrics.conversions, icon: Target },
-    {
-      label: "Tasa de conversión",
-      value: `${metrics.conversionRate}%`,
-      icon: BarChart3,
-    },
-  ];
+  const periodLabel = `vs. ${days} días anteriores`;
+  const dateFormatter = new Intl.DateTimeFormat("es", {
+    day: "numeric",
+    month: "short",
+  });
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="mx-auto grid max-w-[1180px] gap-[22px]">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            Hola, {ctx.user.name.split(" ")[0]}
+          <h1 className="display text-[34px] text-ink">
+            hola, {ctx.user.name.split(" ")[0].toLowerCase()}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Así va tu captación de leads hoy.
+          <p className="mt-1 text-[15px] text-ink-primary">
+            Este es el rendimiento de tus funnels en los últimos {days} días.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/create-ai">
-            <Plus className="size-4" />
-            Crear Funnel
-          </Link>
+        <Button asChild size="lg">
+          <Link href="/create-ai">+ Crear funnel</Link>
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {cards.map((card) => (
-          <Card key={card.label} className="gap-2 py-4">
-            <CardHeader className="flex-row items-center justify-between px-4">
-              <CardDescription className="text-xs">
-                {card.label}
-              </CardDescription>
-              <card.icon className="size-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent className="px-4">
-              <p className="text-2xl font-semibold tabular-nums">
-                {card.value}
-              </p>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <KpiCard
+          label="Funnels activos"
+          value={String(metrics.activeFunnels.value)}
+          periodLabel={`${metrics.totalFunnels} en total`}
+        />
+        <KpiCard
+          label="Visitas"
+          value={metrics.views.value.toLocaleString("es")}
+          delta={metrics.views.delta}
+          periodLabel={periodLabel}
+        />
+        <KpiCard
+          label="Leads"
+          value={metrics.leads.value.toLocaleString("es")}
+          delta={metrics.leads.delta}
+          periodLabel={periodLabel}
+        />
+        <KpiCard
+          label="Conversión"
+          value={`${metrics.conversionRate.value.toLocaleString("es")}%`}
+          delta={metrics.conversionRate.delta}
+          deltaSuffix=" pts"
+          periodLabel={periodLabel}
+        />
       </div>
 
-      <Card>
-        <CardHeader className="flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-base">Mis Funnels</CardTitle>
-            <CardDescription>
-              Tus funnels más recientes y su rendimiento
-            </CardDescription>
-          </div>
+      <Suspense fallback={<div className="h-[340px] rounded-2xl bg-surface" />}>
+        <PerformanceCard series={series} range={days} />
+      </Suspense>
+
+      <section className="overflow-hidden rounded-2xl border border-line bg-card">
+        <div className="flex items-center justify-between gap-3 px-6 py-4">
+          <h2 className="display text-[20px] text-ink">Funnels recientes</h2>
           {recentFunnels.length > 0 ? (
-            <Button asChild variant="outline" size="sm">
-              <Link href="/funnels">Ver todos</Link>
-            </Button>
+            <Link
+              href="/funnels"
+              className="text-[13.5px] font-medium text-brand underline-offset-4 hover:underline"
+            >
+              Ver todos
+            </Link>
           ) : null}
-        </CardHeader>
-        <CardContent>
-          {recentFunnels.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed py-12 text-center">
-              <span className="flex size-12 items-center justify-center rounded-full bg-primary/10">
-                <Sparkles className="size-6 text-primary" />
-              </span>
-              <div>
-                <p className="font-medium">Todavía no tienes funnels</p>
-                <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">
-                  Describe tu negocio y tu objetivo, y la IA creará tu primer
-                  funnel listo para publicar.
-                </p>
-              </div>
-              <Button asChild>
-                <Link href="/create-ai">
-                  <Sparkles className="size-4" />
-                  Crear mi primer funnel
-                </Link>
-              </Button>
-            </div>
-          ) : (
-            <ul className="divide-y">
-              {recentFunnels.map((funnel) => (
-                <li
-                  key={funnel.id}
-                  className="flex items-center justify-between gap-3 py-3"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{funnel.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {funnel._count.sessions} sesiones ·{" "}
-                      {funnel._count.leads} leads
-                    </p>
-                  </div>
-                  <Badge
-                    variant={
-                      funnel.status === "PUBLISHED" ? "default" : "secondary"
-                    }
+        </div>
+
+        {recentFunnels.length === 0 ? (
+          <div className="border-t border-line px-6 py-14 text-center">
+            <p className="display text-[18px] text-ink">
+              Todavía no tienes funnels
+            </p>
+            <p className="mx-auto mt-1.5 max-w-sm text-[14.5px] text-ink-primary">
+              Describe tu negocio y tu objetivo, y la IA creará tu primer funnel
+              listo para publicar.
+            </p>
+            <Button asChild className="mt-5">
+              <Link href="/create-ai">Crear mi primer funnel</Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] border-collapse">
+              <thead>
+                <tr className="bg-[#F7F6F3] text-left">
+                  {["Funnel", "Estado", "Visitas", "Leads", "Conversión", "Modificado"].map(
+                    (headerLabel, i) => (
+                      <th
+                        key={headerLabel}
+                        className={`px-4 py-2.5 text-[11.5px] font-semibold uppercase tracking-[0.045em] text-ink-secondary ${
+                          i === 0 ? "pl-6" : ""
+                        } ${i > 1 ? "text-right" : ""} ${i === 5 ? "pr-6" : ""}`}
+                      >
+                        {headerLabel}
+                      </th>
+                    )
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {recentFunnels.map((funnel) => (
+                  <tr
+                    key={funnel.id}
+                    className="border-t border-[#F1F0ED] transition-colors hover:bg-[#F7F6F3]"
                   >
-                    {STATUS_LABEL[funnel.status] ?? funnel.status}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+                    <td className="py-3 pl-6 pr-4">
+                      <Link
+                        href={`/funnels/${funnel.id}/edit`}
+                        className="flex items-center gap-3"
+                      >
+                        <FunnelThumb
+                          status={funnel.status}
+                          height={34}
+                          compact
+                          className="w-[34px] shrink-0 rounded-[10px] p-1.5"
+                        />
+                        <span className="min-w-0">
+                          <span className="block truncate text-[14.5px] font-medium text-ink">
+                            {funnel.name}
+                          </span>
+                          <span className="block truncate text-[12.5px] text-ink-secondary">
+                            {funnel.industry ?? `/f/${funnel.slug}`}
+                          </span>
+                        </span>
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <FunnelStatusBadge status={funnel.status} />
+                    </td>
+                    <td className="px-4 py-3 text-right text-[14px] tabular-nums text-ink">
+                      {funnel.views.toLocaleString("es")}
+                    </td>
+                    <td className="px-4 py-3 text-right text-[14px] tabular-nums text-ink">
+                      {funnel._count.leads.toLocaleString("es")}
+                    </td>
+                    <td className="px-4 py-3 text-right text-[14px] tabular-nums text-ink">
+                      {funnel.conversionRate.toLocaleString("es")}%
+                    </td>
+                    <td className="py-3 pl-4 pr-6 text-right text-[13px] text-ink-secondary">
+                      {dateFormatter.format(funnel.updatedAt)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

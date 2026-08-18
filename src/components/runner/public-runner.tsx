@@ -116,6 +116,7 @@ export function PublicRunner({ snapshot }: { snapshot: FunnelSnapshot }) {
     <FunnelExperience
       snapshot={snapshot}
       callbacks={callbacks}
+      businessName={snapshot.businessName}
       className="min-h-svh"
     />
   );

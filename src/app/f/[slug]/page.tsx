@@ -15,9 +15,10 @@ export async function generateMetadata({
 }: PageProps<"/f/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const published = await getPublishedFunnelBySlug(slug);
-  if (!published) return { title: "Funnel no disponible" };
+  if (!published) return { title: { absolute: "Funnel no disponible" } };
+  // El funnel público es white-label: no arrastra la marca aifunnel al título.
   return {
-    title: published.snapshot.intro.headline,
+    title: { absolute: published.snapshot.intro.headline },
     description: published.snapshot.intro.subheadline || undefined,
     robots: { index: true },
   };

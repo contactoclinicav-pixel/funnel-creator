@@ -4,12 +4,50 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Identidad visual AIFUNNEL — azul petróleo sobre sistema marfil.
+ * Los tokens siguen el design handoff: la estructura es de bordes de 1px
+ * (sin sombras salvo el modal) y el acento petróleo sólo en superficies
+ * de marca, nunca como decoración.
+ */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-inter-tight);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-heading: var(--font-inter-tight);
+
+  /* Marca */
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-tint: var(--brand-tint);
+  --color-brand-light: var(--brand-light);
+  --color-on-dark-muted: var(--on-dark-muted);
+  --color-on-dark-legend: var(--on-dark-legend);
+  --color-data-1: var(--data-1);
+  --color-data-2: var(--data-2);
+
+  /* Texto */
+  --color-ink: var(--ink);
+  --color-ink-primary: var(--ink-primary);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-placeholder: var(--ink-placeholder);
+
+  /* Superficies y bordes */
+  --color-surface: var(--surface);
+  --color-line-strong: var(--line-strong);
+  --color-line-soft: var(--line-soft);
+  --color-line: var(--line);
+
+  /* Estados de funnel */
+  --color-draft: var(--draft);
+  --color-draft-foreground: var(--draft-foreground);
+  --color-archived: var(--archived);
+  --color-archived-foreground: var(--archived-foreground);
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,82 +77,145 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Radios del handoff: 12px controles, 14px cards, 16px paneles, 20px modal */
+  --radius-sm: 9px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 16px;
+  --radius-3xl: 20px;
+  --radius-4xl: 28px;
 }
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  /* Marca */
+  --brand: #1d3f52;
+  --brand-hover: #14303f;
+  --brand-deep: #122c3d;
+  --brand-tint: #e7eef2;
+  --brand-light: #7fa8c4;
+  --on-dark-muted: #9bb4c4;
+  --on-dark-legend: #b9ccd8;
+  --data-1: #9fc5dc;
+  --data-2: #7a9bb0;
+
+  /* Texto */
+  --ink: #403c38;
+  --ink-primary: #696660;
+  --ink-secondary: #85817b;
+  --ink-placeholder: #a9a6a1;
+
+  /* Superficies */
+  --background: #fcfbf9;
+  --surface: #f1f0ed;
+  --foreground: #403c38;
+  --card: #ffffff;
+  --card-foreground: #403c38;
+  --popover: #fcfbf9;
+  --popover-foreground: #403c38;
+
+  --primary: #1d3f52;
+  --primary-foreground: #fcfbf9;
+  --secondary: #f1f0ed;
+  --secondary-foreground: #403c38;
+  --muted: #f1f0ed;
+  --muted-foreground: #85817b;
+  --accent: #e7eef2;
+  --accent-foreground: #1d3f52;
+  --destructive: #925e54;
+
+  /* Bordes */
+  --line-strong: #84827e;
+  --line-soft: #d3d1cc;
+  --line: #e5e3df;
+  --border: #e5e3df;
+  --input: #d3d1cc;
+  --ring: #1d3f52;
+
+  /* Estados */
+  --draft: #f2ece4;
+  --draft-foreground: #a18463;
+  --archived: #ece9e6;
+  --archived-foreground: #817870;
+
+  --chart-1: #9fc5dc;
+  --chart-2: #7a9bb0;
+  --chart-3: #1d3f52;
+  --chart-4: #b9ccd8;
+  --chart-5: #e7eef2;
+
+  --radius: 12px;
+
+  --sidebar: #1d3f52;
+  --sidebar-foreground: #fcfbf9;
+  --sidebar-primary: #7fa8c4;
+  --sidebar-primary-foreground: #fcfbf9;
+  --sidebar-accent: rgba(231, 238, 242, 0.09);
+  --sidebar-accent-foreground: #fcfbf9;
+  --sidebar-border: rgba(231, 238, 242, 0.16);
+  --sidebar-ring: #7fa8c4;
 }
 
+/*
+ * La identidad define un único tema claro. Mantenemos el bloque .dark
+ * apuntando a los mismos valores para que ningún componente que herede el
+ * modo del sistema (p.ej. los toasts) rompa la paleta.
+ */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --brand: #1d3f52;
+  --brand-hover: #14303f;
+  --brand-deep: #122c3d;
+  --brand-tint: #e7eef2;
+  --brand-light: #7fa8c4;
+  --on-dark-muted: #9bb4c4;
+  --on-dark-legend: #b9ccd8;
+  --data-1: #9fc5dc;
+  --data-2: #7a9bb0;
+
+  --ink: #403c38;
+  --ink-primary: #696660;
+  --ink-secondary: #85817b;
+  --ink-placeholder: #a9a6a1;
+
+  --background: #fcfbf9;
+  --surface: #f1f0ed;
+  --foreground: #403c38;
+  --card: #ffffff;
+  --card-foreground: #403c38;
+  --popover: #fcfbf9;
+  --popover-foreground: #403c38;
+
+  --primary: #1d3f52;
+  --primary-foreground: #fcfbf9;
+  --secondary: #f1f0ed;
+  --secondary-foreground: #403c38;
+  --muted: #f1f0ed;
+  --muted-foreground: #85817b;
+  --accent: #e7eef2;
+  --accent-foreground: #1d3f52;
+  --destructive: #925e54;
+
+  --line-strong: #84827e;
+  --line-soft: #d3d1cc;
+  --line: #e5e3df;
+  --border: #e5e3df;
+  --input: #d3d1cc;
+  --ring: #1d3f52;
+
+  --draft: #f2ece4;
+  --draft-foreground: #a18463;
+  --archived: #ece9e6;
+  --archived-foreground: #817870;
+
+  --sidebar: #1d3f52;
+  --sidebar-foreground: #fcfbf9;
+  --sidebar-primary: #7fa8c4;
+  --sidebar-primary-foreground: #fcfbf9;
+  --sidebar-accent: rgba(231, 238, 242, 0.09);
+  --sidebar-accent-foreground: #fcfbf9;
+  --sidebar-border: rgba(231, 238, 242, 0.16);
+  --sidebar-ring: #7fa8c4;
 }
 
 @layer base {
@@ -123,8 +224,54 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: "cv11";
   }
   html {
     @apply font-sans;
+    line-height: 1.45;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-inter-tight), system-ui, sans-serif;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+}
+
+@layer components {
+  /* Superficies de marca (gradientes sólo aquí, nunca decorativos) */
+  .surface-brand {
+    background: linear-gradient(180deg, #1d3f52, #122c3d);
+  }
+  .surface-brand-card {
+    background: linear-gradient(160deg, #1d3f52, #132e3f);
+  }
+  .surface-brand-thumb {
+    background: linear-gradient(160deg, #1d3f52, #142f40);
+  }
+
+  /* Micro-label del sistema: UPPERCASE con tracking generoso */
+  .micro-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+    color: var(--ink-secondary);
+  }
+
+  /* Titulares de marca en Inter Tight */
+  .display {
+    font-family: var(--font-inter-tight), system-ui, sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+}
+
+/* Motion del sistema: sin bounce ni parallax */
+@media (prefers-reduced-motion: no-preference) {
+  .transition-brand {
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
 }

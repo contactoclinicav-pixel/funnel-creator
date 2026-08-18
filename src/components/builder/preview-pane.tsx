@@ -52,7 +52,12 @@ export function PreviewPane({ snapshot }: { snapshot: FunnelSnapshot }) {
           )}
           style={{ minHeight: 560 }}
         >
-          <FunnelExperience key={resetKey} snapshot={snapshot} className="min-h-[560px]" />
+          <FunnelExperience
+            key={resetKey}
+            snapshot={snapshot}
+            businessName={snapshot.businessName}
+            className="min-h-[560px]"
+          />
         </div>
       </div>
     </div>

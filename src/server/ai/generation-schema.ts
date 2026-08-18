@@ -116,6 +116,11 @@ export const funnelGenerationSchema = z.object({
       .describe(
         "Solo para whatsapp: mensaje precargado usando {{funnel_name}} y {{result_name}}; vacío en otros tipos"
       ),
+    resultNote: z
+      .string()
+      .describe(
+        "Nota breve bajo el resultado cuando el sector lo requiera (salud, estética, bienestar, legal, finanzas): p.ej. 'Este resultado es orientativo y no constituye un diagnóstico médico.' Cadena vacía en sectores donde no aplique."
+      ),
   }),
   theme: z.object({
     primaryColor: z
