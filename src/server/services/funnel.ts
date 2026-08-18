@@ -3,6 +3,14 @@ import "server-only";
 import { randomUUID } from "crypto";
 
 import { prisma } from "@/lib/db";
+import {
+  DEFAULT_CTA,
+  DEFAULT_INTRO,
+  DEFAULT_LEAD_CAPTURE,
+  DEFAULT_THEME,
+  themeSchema,
+  type ThemeConfig,
+} from "@/lib/funnel-config";
 import { slugify } from "@/lib/slug";
 import type { FunnelStatus } from "@/generated/prisma/enums";
 
@@ -30,43 +38,39 @@ export async function generateUniqueSlug(
   }
 }
 
-const DEFAULT_INTRO = {
-  headline: "Descubre lo que necesitas en 2 minutos",
-  subheadline: "Responde unas preguntas rápidas y recibe una recomendación personalizada.",
-  buttonText: "Empezar",
-};
+/** Aplica logo/color/tipografía de la marca del workspace sobre el tema por defecto. */
+async function resolveTheme(ctx: Ctx, applyBrand?: boolean): Promise<ThemeConfig> {
+  if (!applyBrand) return DEFAULT_THEME;
 
-const DEFAULT_THEME = {
-  primaryColor: "#171717",
-  backgroundColor: "#ffffff",
-  font: "geist",
-};
+  const brand = await prisma.brandSettings.findUnique({
+    where: { workspaceId: ctx.workspaceId },
+  });
+  if (!brand) return DEFAULT_THEME;
 
-const DEFAULT_LEAD_CAPTURE = {
-  position: "before_result",
-  fields: [
-    { key: "name", label: "Nombre", enabled: true, required: true },
-    { key: "email", label: "Email", enabled: true, required: true },
-    { key: "phone", label: "Teléfono", enabled: false, required: false },
-    { key: "city", label: "Ciudad", enabled: false, required: false },
-  ],
-  consent: {
-    enabled: true,
-    text: "Acepto recibir información sobre este servicio.",
-  },
-};
-
-const DEFAULT_CTA = {
-  type: "url",
-  label: "Más información",
-  value: "",
-};
+  const candidate = {
+    ...DEFAULT_THEME,
+    ...(brand.logoUrl ? { logoUrl: brand.logoUrl } : {}),
+    ...(brand.primaryColor ? { primaryColor: brand.primaryColor } : {}),
+    ...(brand.font ? { font: brand.font } : {}),
+  };
+  const parsed = themeSchema.safeParse(candidate);
+  return parsed.success ? parsed.data : DEFAULT_THEME;
+}
 
 export async function createFunnel(
   ctx: Ctx,
-  data: { name: string; goal?: string; industry?: string; audience?: string }
+  data: {
+    name: string;
+    goal?: string;
+    industry?: string;
+    audience?: string;
+    applyBrand?: boolean;
+  }
 ) {
-  const slug = await generateUniqueSlug(data.name);
+  const [slug, theme] = await Promise.all([
+    generateUniqueSlug(data.name),
+    resolveTheme(ctx, data.applyBrand),
+  ]);
   return prisma.funnel.create({
     data: {
       workspaceId: ctx.workspaceId,
@@ -77,11 +81,52 @@ export async function createFunnel(
       industry: data.industry,
       audience: data.audience,
       intro: DEFAULT_INTRO,
-      theme: DEFAULT_THEME,
+      theme,
       leadCapture: DEFAULT_LEAD_CAPTURE,
       cta: DEFAULT_CTA,
     },
   });
+}
+
+/** Aplica la marca del workspace al tema de un funnel ya existente. */
+export async function applyBrandToFunnel(ctx: Ctx, funnelId: string) {
+  const funnel = await prisma.funnel.findFirst({
+    where: { id: funnelId, workspaceId: ctx.workspaceId },
+    select: { id: true },
+  });
+  if (!funnel) return { error: "Funnel no encontrado." as const };
+
+  const brand = await prisma.brandSettings.findUnique({
+    where: { workspaceId: ctx.workspaceId },
+  });
+  if (!brand || (!brand.logoUrl && !brand.primaryColor && !brand.font)) {
+    return {
+      error:
+        "Configura tu marca en «Mi Marca» antes de aplicarla a un funnel." as const,
+    };
+  }
+
+  const current = await prisma.funnel.findUniqueOrThrow({
+    where: { id: funnelId },
+    select: { theme: true },
+  });
+  const candidate = {
+    ...DEFAULT_THEME,
+    ...(typeof current.theme === "object" && current.theme ? current.theme : {}),
+    ...(brand.logoUrl ? { logoUrl: brand.logoUrl } : {}),
+    ...(brand.primaryColor ? { primaryColor: brand.primaryColor } : {}),
+    ...(brand.font ? { font: brand.font } : {}),
+  };
+  const parsed = themeSchema.safeParse(candidate);
+  if (!parsed.success) {
+    return { error: "No se pudo aplicar la marca." as const };
+  }
+
+  await prisma.funnel.update({
+    where: { id: funnelId },
+    data: { theme: parsed.data },
+  });
+  return { success: true as const };
 }
 
 export async function listFunnels(ctx: Ctx, filter?: { status?: FunnelStatus }) {

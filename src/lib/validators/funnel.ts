@@ -30,6 +30,7 @@ const optionalText = (max: number) =>
 
 export const createFunnelSchema = z.object({
   name: funnelNameSchema,
+  applyBrand: z.boolean().optional(),
 });
 
 export const updateFunnelSettingsSchema = z.object({

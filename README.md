@@ -68,4 +68,5 @@ prisma/            # schema + migraciones
 - ✅ **Fase 5 — Leads**: tabla con filtros por estado y funnel, detalle con respuestas legibles de la versión que vio el visitante, fuente/UTM, cambio de estado (Nuevo→Contactado→Calificado→Convertido→Perdido), notas internas y eliminación del lead con todos sus datos.
 - ✅ **Fase 6 — Analytics**: resumen por funnel, embudo Visitas→Inicios→Completados→Leads→CTA, 4 tasas (conversión, finalización, captura, clic CTA) y abandono por pregunta.
 - ✅ **Fase 7 — AI Generator**: onboarding conversacional de 6 pasos, abstracción `AIProvider` (server-side), salida estructurada validada con Zod + reintento con feedback, y creación transaccional del funnel completo. Requiere `ANTHROPIC_API_KEY` en `.env`.
-- ⏭️ Fase 8 — Templates + Branding.
+- ✅ **Fase 8 — Templates + Branding**: librería de 5 templates (captación de leads, buscador de producto, buscador de servicio, quiz de autoevaluación, reserva de cita) con seed idempotente, materializador de funnels compartido entre IA y templates, página «Mi Marca» (logo, colores, tipografía, contacto) y aplicación de marca a un funnel tanto al crearlo como de forma retroactiva desde el builder. Modal unificado «¿Cómo quieres empezar?» como punto de entrada único.
+- ⏭️ Fase 9 — AI Conversion Advisor.

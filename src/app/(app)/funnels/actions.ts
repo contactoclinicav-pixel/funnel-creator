@@ -10,6 +10,7 @@ import {
 } from "@/lib/validators/funnel";
 import { requireWorkspace } from "@/server/context";
 import {
+  applyBrandToFunnel,
   createFunnel,
   deleteFunnel,
   duplicateFunnel,
@@ -22,6 +23,7 @@ export async function createFunnelAction(formData: FormData) {
   const ctx = await requireWorkspace();
   const parsed = createFunnelSchema.safeParse({
     name: formData.get("name"),
+    applyBrand: formData.get("applyBrand") === "on",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0].message };
@@ -123,6 +125,21 @@ export async function unpublishFunnelAction(formData: FormData) {
     return { error: result.error };
   }
   revalidatePath("/funnels");
+  revalidatePath(`/funnels/${parsed.data.funnelId}/edit`);
+  return { success: true };
+}
+
+export async function applyBrandToFunnelAction(formData: FormData) {
+  const ctx = await requireWorkspace();
+  const parsed = funnelIdSchema.safeParse({ funnelId: formData.get("funnelId") });
+  if (!parsed.success) {
+    return { error: "Solicitud inválida." };
+  }
+
+  const result = await applyBrandToFunnel(ctx, parsed.data.funnelId);
+  if ("error" in result) {
+    return { error: result.error };
+  }
   revalidatePath(`/funnels/${parsed.data.funnelId}/edit`);
   return { success: true };
 }

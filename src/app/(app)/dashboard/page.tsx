@@ -5,6 +5,7 @@ import { KpiCard } from "@/components/dashboard/kpi-card";
 import { PerformanceCard } from "@/components/dashboard/performance-card";
 import { FunnelStatusBadge } from "@/components/funnels/status-badge";
 import { FunnelThumb } from "@/components/funnels/funnel-thumb";
+import { StartFunnelModal } from "@/components/funnels/start-funnel-modal";
 import { Button } from "@/components/ui/button";
 import { requireWorkspace } from "@/server/context";
 import {
@@ -48,9 +49,7 @@ export default async function DashboardPage({
             Este es el rendimiento de tus funnels en los últimos {days} días.
           </p>
         </div>
-        <Button asChild size="lg">
-          <Link href="/create-ai">+ Crear funnel</Link>
-        </Button>
+        <StartFunnelModal size="lg" />
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

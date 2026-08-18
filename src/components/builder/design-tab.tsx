@@ -1,5 +1,6 @@
 "use client";
 
+import { applyBrandToFunnelAction } from "@/app/(app)/funnels/actions";
 import {
   updateIntroAction,
   updateThemeAction,
@@ -40,6 +41,13 @@ export function DesignTab({
 }) {
   const introAction = useBuilderAction();
   const themeAction = useBuilderAction();
+  const brandAction = useBuilderAction();
+
+  async function applyBrand() {
+    const form = new FormData();
+    form.set("funnelId", funnelId);
+    await brandAction.run(applyBrandToFunnelAction(form), "Marca aplicada.");
+  }
 
   async function saveIntro(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -127,14 +135,29 @@ export function DesignTab({
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Apariencia</CardTitle>
-          <CardDescription>
-            Colores, tipografía y logo de la experiencia pública.
-          </CardDescription>
+        <CardHeader className="flex-row items-start justify-between gap-3">
+          <div>
+            <CardTitle className="text-base">Apariencia</CardTitle>
+            <CardDescription>
+              Colores, tipografía y logo de la experiencia pública.
+            </CardDescription>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={applyBrand}
+            disabled={brandAction.pending}
+          >
+            {brandAction.pending ? "Aplicando…" : "Aplicar mi marca"}
+          </Button>
         </CardHeader>
         <CardContent>
-          <form onSubmit={saveTheme} className="grid gap-4">
+          <form
+            key={`${theme.primaryColor}-${theme.logoUrl}-${theme.font}`}
+            onSubmit={saveTheme}
+            className="grid gap-4"
+          >
             <div className="grid gap-2">
               <Label htmlFor="theme-logo">Logo (URL de imagen)</Label>
               <Input

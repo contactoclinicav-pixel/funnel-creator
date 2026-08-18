@@ -8,6 +8,7 @@ import { Logo, Wordmark } from "@/components/brand/logo";
 import { NAV_ITEMS } from "@/components/layout/nav-items";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { UserMenu } from "@/components/layout/user-menu";
+import { StartFunnelModal } from "@/components/funnels/start-funnel-modal";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -180,9 +181,7 @@ export function AppShell({
               <BellIcon />
               <span className="absolute right-2.5 top-2.5 size-1.5 rounded-full bg-brand" />
             </button>
-            <Button asChild className="hidden h-[38px] sm:inline-flex">
-              <Link href="/create-ai">+ Crear funnel</Link>
-            </Button>
+            <StartFunnelModal className="hidden h-[38px] sm:inline-flex" />
             <UserMenu name={user.name} email={user.email} />
           </div>
         </header>

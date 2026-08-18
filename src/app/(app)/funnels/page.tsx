@@ -1,10 +1,9 @@
 import Link from "next/link";
 
 import { PageHeader, UnderlineTabs } from "@/components/layout/page-header";
-import { CreateFunnelDialog } from "@/components/funnels/create-funnel-dialog";
 import { FunnelRowActions } from "@/components/funnels/funnel-row-actions";
 import { FunnelThumb } from "@/components/funnels/funnel-thumb";
-import { Button } from "@/components/ui/button";
+import { StartFunnelModal } from "@/components/funnels/start-funnel-modal";
 import { requireWorkspace } from "@/server/context";
 import { listFunnels } from "@/server/services/funnel";
 import type { FunnelStatus } from "@/generated/prisma/enums";
@@ -51,12 +50,11 @@ export default async function FunnelsPage({
             : "Crea, edita y publica tus funnels de conversión."
         }
         actions={
-          <div className="flex items-center gap-2">
-            <Button asChild variant="outline">
-              <Link href="/create-ai">Crear con IA</Link>
-            </Button>
-            <CreateFunnelDialog key={String(openNew)} defaultOpen={openNew} />
-          </div>
+          <StartFunnelModal
+            key={String(openNew)}
+            triggerLabel="+ Nuevo funnel"
+            defaultOpen={openNew}
+          />
         }
       />
 
@@ -80,9 +78,9 @@ export default async function FunnelsPage({
             Describe tu negocio y deja que la IA cree el primero, o empieza uno
             en blanco.
           </p>
-          <Button asChild className="mt-5">
-            <Link href="/create-ai">Crear con IA</Link>
-          </Button>
+          <div className="mt-5 flex justify-center">
+            <StartFunnelModal triggerLabel="+ Crear funnel" />
+          </div>
         </div>
       ) : (
         <div className="grid gap-[18px] sm:grid-cols-2 lg:grid-cols-3">
