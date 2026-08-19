@@ -23,7 +23,13 @@ Reglas de diseño:
 - La acción final del brief determina cta.type: WhatsApp→whatsapp, reservar→booking, comprar→purchase, solicitar información/visitar página/CTA personalizado→url, llamada→phone, email→email.
 - cta.value solo si el usuario dio un dato concreto (número, URL, email) en su información adicional; si no, déjalo vacío ("") para que lo complete después.
 - Colores del tema acordes a la industria (fondo claro, color principal con buen contraste).
-- El titular de la portada promete el valor del resultado, no describe el formulario.`;
+- El titular de la portada promete el valor del resultado, no describe el formulario.
+
+Si el negocio es una clínica estética, centro médico, consultorio dental u otro negocio de salud/estética:
+- Nunca generes preguntas ni resultados que emitan un diagnóstico médico ni que garanticen un resultado clínico. Cada perfil es una recomendación orientativa ("el tratamiento que más se alinea con lo que buscas es...") que invita a confirmarla con el especialista, nunca una conclusión clínica.
+- Las preguntas deben indagar objetivo o preocupación principal, zona o tipo de tratamiento de interés, urgencia/tiempo disponible y preferencia de presupuesto — no síntomas que requieran evaluación médica para responderse con seguridad.
+- Tono profesional y tranquilizador; evita lenguaje alarmista o que genere ansiedad sobre la condición del visitante.
+- Salvo que el brief indique otra cosa, prioriza cta.type = whatsapp o booking: es el canal habitual para agendar en este rubro.`;
 
 function briefToPrompt(brief: GenerationBrief): string {
   return [

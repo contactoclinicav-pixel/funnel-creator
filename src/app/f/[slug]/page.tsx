@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { QuotaReachedScreen } from "@/components/runner/quota-reached";
 import { PublicRunner } from "@/components/runner/public-runner";
 import {
   getPublishedFunnelBySlug,
   logEvent,
 } from "@/server/services/public-runner";
+import { hasReachedResponseQuota } from "@/server/services/plan";
 
 // La página pública siempre sirve la última versión publicada.
 export const dynamic = "force-dynamic";
@@ -39,6 +41,12 @@ export default async function PublicFunnelPage({
     funnelId: published.funnelId,
     type: "FUNNEL_VIEW",
   }).catch(() => undefined);
+
+  // El plan del workspace limita cuántas respuestas puede recibir por mes;
+  // al alcanzarlo, no se acepta el inicio de nuevas sesiones.
+  if (await hasReachedResponseQuota(published.workspaceId)) {
+    return <QuotaReachedScreen businessName={published.snapshot.businessName} />;
+  }
 
   return <PublicRunner snapshot={published.snapshot} />;
 }

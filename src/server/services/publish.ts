@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/db";
+import { canPublishAnotherFunnel } from "@/server/services/plan";
 import { compileFunnelSnapshot } from "@/server/services/snapshot";
 
 interface Ctx {
@@ -27,6 +28,15 @@ export async function publishFunnel(ctx: Ctx, funnelId: string) {
     return {
       error: "Añade al menos una pregunta antes de publicar." as const,
     };
+  }
+  if (funnel.status !== "PUBLISHED") {
+    const canPublish = await canPublishAnotherFunnel(ctx.workspaceId, funnelId);
+    if (!canPublish) {
+      return {
+        error:
+          "Alcanzaste el límite de funnels publicados de tu plan. Actualiza tu plan para publicar más.",
+      };
+    }
   }
 
   const snapshot = await compileFunnelSnapshot(ctx, funnelId);

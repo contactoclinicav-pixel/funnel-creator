@@ -80,12 +80,22 @@ enum MemberRole {
   VIEWER
 }
 
+enum Plan {
+  FREE
+  START
+  GROWTH
+  AGENCY
+}
+
 model Workspace {
-  id        String   @id @default(cuid())
-  name      String
-  createdBy String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String    @id @default(cuid())
+  name            String
+  createdBy       String
+  plan            Plan      @default(FREE)
+  planActivatedAt DateTime?
+  planNote        String? // referencia interna: quién activó el plan y cómo (transferencia, etc.)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   members WorkspaceMember[]
   funnels Funnel[]
