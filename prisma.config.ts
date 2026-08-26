@@ -9,6 +9,8 @@ export default defineConfig({
   },
   datasource: {
     url: env("DATABASE_URL"),
-    shadowDatabaseUrl: env("SHADOW_DATABASE_URL"),
+    // Solo necesaria para `migrate dev` en local (shadow DB de Prisma Postgres);
+    // no debe ser obligatoria en producción (generate/migrate deploy no la usan).
+    shadowDatabaseUrl: process.env.SHADOW_DATABASE_URL,
   },
 });
